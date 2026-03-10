@@ -203,6 +203,32 @@ curl -X POST http://localhost:8000/api/simulation/run
 
 ---
 
+## Outputs / Screenshots
+
+Please place the provided screenshots in the `assets/` directory with the matching filenames below to render them in the documentation.
+
+### 1. DRISHTI (External Threat Intelligence)
+![Drishti - Phishing Domains](assets/drishti.png)
+*Monitoring and detecting typosquatting and visual clones of government portals.*
+
+### 2. KAVACH (Internal Threat Monitoring)
+![Kavach - 12-Zone Radar & Rules Engine](assets/kavach.png)
+*Tracking login anomalies, foreign IP connections, and off-hours access across 12 zones.*
+
+### 3. BRIDGE (Correlation Engine)
+![Bridge - Correlation Graph](assets/bridge.png)
+*Linking external phishing infrastructure directly to internal security breaches.*
+
+### 4. SENTINEL-AI (Threat Analysis Engine)
+![AI Analyst](assets/ai_analyst.png)
+*Deep natural language threat reasoning powered by transparent mathematical models.*
+
+### 5. LIVE ATTACK SIMULATION
+![Attack Simulation Timeline](assets/attack_simulation.png)
+*Real-time simulation timeline showing a full attack chain flowing across all Sentinel engines.*
+
+---
+
 ## Tech Stack
 - **FastAPI** — async Python web framework
 - **SQLite** — zero-setup database (file: sentinel.db)  
