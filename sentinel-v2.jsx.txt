@@ -1,0 +1,940 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+
+/* ── FONTS ── */
+const FONT_LINK = "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap";
+
+/* ── PALETTE ── */
+const C = {
+  bg: "#040608", panel: "#080c10", border: "#0f1f1a",
+  accent: "#00ff9d", red: "#ff2d3a", amber: "#ffb800",
+  blue: "#00c8ff", purple: "#a855f7",
+  dim: "#1a2a22", text: "#b0c8b8", muted: "#3a5a46",
+};
+
+/* ── ZONES ── */
+const ZONES = [
+  { id: "CEN", name: "Central", x: 50, y: 50 },
+  { id: "NOR", name: "North", x: 50, y: 15 },
+  { id: "SOU", name: "South", x: 50, y: 85 },
+  { id: "EAS", name: "East", x: 80, y: 50 },
+  { id: "WES", name: "West", x: 20, y: 50 },
+  { id: "NEZ", name: "NE", x: 75, y: 20 },
+  { id: "NWZ", name: "NW", x: 25, y: 20 },
+  { id: "SEZ", name: "SE", x: 75, y: 80 },
+  { id: "SWZ", name: "SW", x: 25, y: 80 },
+  { id: "SHA", name: "Shahdara", x: 88, y: 35 },
+  { id: "CIV", name: "Civil Lines", x: 60, y: 10 },
+  { id: "CSP", name: "City SP", x: 40, y: 90 },
+];
+
+/* ── INITIAL DATA ── */
+const INIT_DOMAINS = [
+  { id: "D001", domain: "mcd-services-delhi.com", sim: 94, type: "Aadhaar Form", age: "2 min", sev: "CRITICAL", status: "LIVE", takedown: false },
+  { id: "D002", domain: "mcdonline-payment.in", sim: 87, type: "Payment Portal", age: "14 min", sev: "HIGH", status: "LIVE", takedown: false },
+  { id: "D003", domain: "delhi-mcd-portal.net", sim: 81, type: "Login Clone", age: "1h", sev: "HIGH", status: "TAKEDOWN", takedown: true },
+  { id: "D004", domain: "mcd-tax-pay.org", sim: 76, type: "Tax Portal", age: "3h", sev: "MEDIUM", status: "WATCH", takedown: false },
+  { id: "D005", domain: "mcdelhi-official.co.in", sim: 68, type: "General Portal", age: "6h", sev: "LOW", status: "WATCH", takedown: false },
+];
+
+const INIT_EVENTS = [
+  { id: "KV001", label: "Failed Login Spike", zone: "Central", sev: "CRITICAL", ts: "08:42:17", resolved: false },
+  { id: "KV002", label: "Foreign IP Connection", zone: "NE", sev: "HIGH", ts: "09:11:03", resolved: false },
+  { id: "KV003", label: "Off-Hours Privileged Access", zone: "East", sev: "HIGH", ts: "11:15:44", resolved: false },
+  { id: "KV004", label: "Port Scan Detected", zone: "North", sev: "MEDIUM", ts: "12:02:58", resolved: false },
+  { id: "KV005", label: "Large Data Transfer", zone: "South", sev: "MEDIUM", ts: "13:30:22", resolved: false },
+  { id: "KV006", label: "Failed Login Spike", zone: "Shahdara", sev: "CRITICAL", ts: "14:05:11", resolved: false },
+];
+
+const INIT_CORRELATIONS = [
+  { id: "BR001", ext: "mcd-services-delhi.com", int: "Failed logins – Central", conf: 97, type: "Credential Stuffing", ts: "08:44", confirmed: true },
+  { id: "BR002", ext: "mcdonline-payment.in", int: "Off-hours access – East", conf: 84, type: "Phishing → Intrusion", ts: "11:17", confirmed: false },
+  { id: "BR003", ext: "delhi-mcd-portal.net", int: "Foreign IP – NE Zone", conf: 72, type: "Credential Stuffing", ts: "06:33", confirmed: true },
+];
+
+/* ── ATTACK SIM SCRIPT ── */
+const SIM_STEPS = [
+  { ms: 0,    actor: "DRISHTI",  msg: "CertStream alert: new SSL cert issued for mcd-verify-aadhaar.xyz", sev: "MEDIUM" },
+  { ms: 1800, actor: "DRISHTI",  msg: "Domain analysis: Levenshtein distance 3 from mcd.delhi.gov.in — TYPOSQUAT CONFIRMED", sev: "HIGH" },
+  { ms: 3400, actor: "DRISHTI",  msg: "Visual hash match 91% — Aadhaar form detected on clone portal", sev: "CRITICAL" },
+  { ms: 5000, actor: "DRISHTI",  msg: "Canary credential 'priya.sharma.7731' injected into fake portal", sev: "INFO" },
+  { ms: 7200, actor: "KAVACH",   msg: "Login anomaly — Central Zone: 47 failed attempts in 90 seconds (Z-score: 4.1)", sev: "HIGH" },
+  { ms: 9000, actor: "KAVACH",   msg: "Foreign IP 185.220.101.x attempting privileged access — blocked", sev: "CRITICAL" },
+  { ms: 10800,actor: "BRIDGE",   msg: "Correlation engine: portal type MATCH + event timing MATCH (∆t = 2h 14min)", sev: "HIGH" },
+  { ms: 12500,actor: "BRIDGE",   msg: "⚡ UNIFIED ATTACK NARRATIVE CONFIRMED — Confidence: 96% — Phishing → Credential Stuffing", sev: "CRITICAL" },
+  { ms: 14000,actor: "CANARY",   msg: "Canary 'priya.sharma.7731' used on real MCD portal — CREDENTIAL THEFT PROVEN", sev: "CRITICAL" },
+  { ms: 15500,actor: "SYSTEM",   msg: "CERT-IN takedown request auto-generated. Email alert sent to 40 IT staff.", sev: "INFO" },
+];
+
+/* ── HELPERS ── */
+const SEV_COLOR = { CRITICAL: C.red, HIGH: C.amber, MEDIUM: C.blue, LOW: C.accent, INFO: C.muted };
+const SEV_BG    = { CRITICAL: "#ff2d3a18", HIGH: "#ffb80018", MEDIUM: "#00c8ff18", LOW: "#00ff9d18", INFO: "#ffffff08" };
+const ACTOR_COLOR = { DRISHTI: C.blue, KAVACH: C.accent, BRIDGE: C.purple, CANARY: C.amber, SYSTEM: C.muted };
+
+function ts() { return new Date().toLocaleTimeString("en-IN", { hour12: false }); }
+
+/* ── SUB-COMPONENTS ── */
+function GlowDot({ color, pulse }) {
+  return (
+    <span style={{ position: "relative", display: "inline-flex", width: 8, height: 8, flexShrink: 0 }}>
+      {pulse && <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: color, animation: "ping 1.4s ease-out infinite", opacity: 0.5 }} />}
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "block" }} />
+    </span>
+  );
+}
+
+function Bar({ val, max = 100, color }) {
+  return (
+    <div style={{ height: 3, background: "#0f1f1a", borderRadius: 2, overflow: "hidden", width: "100%" }}>
+      <div style={{ height: "100%", width: `${(val / max) * 100}%`, background: color, borderRadius: 2, transition: "width 1s ease" }} />
+    </div>
+  );
+}
+
+function Tag({ label, color }) {
+  return (
+    <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 3, background: (SEV_BG[label] || "#ffffff0a"), color: color || SEV_COLOR[label] || "#fff", letterSpacing: "0.1em", fontFamily: "Share Tech Mono, monospace" }}>
+      {label}
+    </span>
+  );
+}
+
+function Panel({ title, accent, children, style = {} }) {
+  return (
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent || C.accent}`, borderRadius: 6, padding: 16, ...style }}>
+      {title && <div style={{ fontSize: 9, color: accent || C.accent, letterSpacing: "0.2em", marginBottom: 12, fontFamily: "Share Tech Mono, monospace" }}>{title}</div>}
+      {children}
+    </div>
+  );
+}
+
+function KPICard({ label, value, sub, color, delta }) {
+  return (
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderTop: `2px solid ${color}`, borderRadius: 6, padding: "14px 16px" }}>
+      <div style={{ fontSize: 9, color: C.muted, letterSpacing: "0.15em", marginBottom: 6, fontFamily: "Share Tech Mono, monospace" }}>{label}</div>
+      <div style={{ fontSize: 36, fontWeight: 700, color, fontFamily: "Rajdhani, sans-serif", lineHeight: 1 }}>{value}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+        <span style={{ fontSize: 10, color: C.muted }}>{sub}</span>
+        {delta && <span style={{ fontSize: 10, color: delta > 0 ? C.red : C.accent }}>↑{Math.abs(delta)}%</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ── RADAR ZONE MAP ── */
+function RadarMap({ events }) {
+  const [angle, setAngle] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setAngle(a => (a + 2) % 360), 30);
+    return () => clearInterval(id);
+  }, []);
+
+  const zoneCounts = {};
+  ZONES.forEach(z => zoneCounts[z.id] = 0);
+  events.filter(e => !e.resolved).forEach(e => {
+    const z = ZONES.find(z => z.name === e.zone || z.id === e.zone);
+    if (z) zoneCounts[z.id]++;
+  });
+
+  const rad = angle * Math.PI / 180;
+
+  return (
+    <div style={{ position: "relative", width: "100%", paddingBottom: "100%", overflow: "hidden" }}>
+      <svg viewBox="0 0 200 200" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+        {/* Grid circles */}
+        {[20, 40, 60, 80].map(r => (
+          <circle key={r} cx="100" cy="100" r={r} fill="none" stroke={C.border} strokeWidth="0.5" />
+        ))}
+        {/* Cross-hairs */}
+        <line x1="100" y1="20" x2="100" y2="180" stroke={C.border} strokeWidth="0.5" />
+        <line x1="20" y1="100" x2="180" y2="100" stroke={C.border} strokeWidth="0.5" />
+        {/* Radar sweep */}
+        <defs>
+          <radialGradient id="sweep" cx="50%" cy="50%">
+            <stop offset="0%" stopColor={C.accent} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={C.accent} stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <path
+          d={`M 100 100 L ${100 + 85 * Math.cos(rad)} ${100 + 85 * Math.sin(rad)} A 85 85 0 0 0 ${100 + 85 * Math.cos(rad - 0.5)} ${100 + 85 * Math.sin(rad - 0.5)} Z`}
+          fill="url(#sweep)" />
+        <line x1="100" y1="100" x2={100 + 85 * Math.cos(rad)} y2={100 + 85 * Math.sin(rad)} stroke={C.accent} strokeWidth="0.8" opacity="0.8" />
+
+        {/* Zones */}
+        {ZONES.map(z => {
+          const cx = (z.x / 100) * 160 + 20;
+          const cy = (z.y / 100) * 160 + 20;
+          const count = zoneCounts[z.id] || 0;
+          const color = count === 0 ? C.muted : count === 1 ? C.blue : count === 2 ? C.amber : C.red;
+          return (
+            <g key={z.id}>
+              {count > 0 && <circle cx={cx} cy={cy} r={8 + count * 2} fill={color} opacity="0.1" />}
+              <circle cx={cx} cy={cy} r={4} fill={color} opacity={0.9} />
+              <text x={cx} y={cy - 7} textAnchor="middle" fontSize="5" fill={color} fontFamily="Share Tech Mono, monospace">{z.id}</text>
+              {count > 0 && <text x={cx + 6} y={cy + 2} fontSize="6" fill={color} fontFamily="Share Tech Mono">{count}</text>}
+            </g>
+          );
+        })}
+        {/* Center */}
+        <circle cx="100" cy="100" r="3" fill={C.accent} />
+        <text x="104" y="96" fontSize="5" fill={C.accent} fontFamily="Share Tech Mono">MCD HQ</text>
+      </svg>
+    </div>
+  );
+}
+
+/* ── BRIDGE GRAPH ── */
+function BridgeGraph({ correlations, simActive, simStep }) {
+  const width = 560, height = 220;
+  const extNodes = [
+    { id: "e1", label: "mcd-services-delhi.com", x: 80, y: 60, type: "ext" },
+    { id: "e2", label: "mcdonline-payment.in", x: 80, y: 120, type: "ext" },
+    { id: "e3", label: "delhi-mcd-portal.net", x: 80, y: 180, type: "ext" },
+  ];
+  const intNodes = [
+    { id: "i1", label: "Central — Login Spike", x: 480, y: 60, type: "int" },
+    { id: "i2", label: "East — Off-Hours Access", x: 480, y: 120, type: "int" },
+    { id: "i3", label: "NE — Foreign IP", x: 480, y: 180, type: "int" },
+  ];
+  const bridge = { x: 280, y: 120 };
+  const edges = [
+    { from: extNodes[0], to: bridge, conf: 97, active: true },
+    { from: extNodes[1], to: bridge, conf: 84, active: true },
+    { from: extNodes[2], to: bridge, conf: 72, active: true },
+    { from: bridge, to: intNodes[0], conf: 97, active: true },
+    { from: bridge, to: intNodes[1], conf: 84, active: true },
+    { from: bridge, to: intNodes[2], conf: 72, active: true },
+  ];
+  const simHighlight = simActive && simStep >= 6;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto" }}>
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      {/* Edges */}
+      {edges.map((e, i) => {
+        const color = simHighlight ? C.purple : e.conf > 90 ? C.red : e.conf > 80 ? C.amber : C.blue;
+        return (
+          <line key={i} x1={e.from.x} y1={e.from.y} x2={e.to.x} y2={e.to.y}
+            stroke={color} strokeWidth={simHighlight ? 1.5 : 0.8}
+            strokeDasharray={simHighlight ? "none" : "4 3"} opacity={simHighlight ? 0.9 : 0.4}
+            filter={simHighlight ? "url(#glow)" : "none"} />
+        );
+      })}
+      {/* Ext nodes */}
+      {extNodes.map(n => (
+        <g key={n.id}>
+          <rect x={n.x - 70} y={n.y - 14} width={140} height={28} rx={4} fill="#0a1510" stroke={C.red} strokeWidth="0.8" />
+          <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize="8" fill={C.red} fontFamily="Share Tech Mono">{n.label}</text>
+        </g>
+      ))}
+      {/* Bridge node */}
+      <g>
+        <circle cx={bridge.x} cy={bridge.y} r={28} fill="#0a0515" stroke={simHighlight ? C.purple : C.muted} strokeWidth={simHighlight ? 2 : 1} filter={simHighlight ? "url(#glow)" : "none"} />
+        <text x={bridge.x} y={bridge.y - 6} textAnchor="middle" fontSize="9" fill={simHighlight ? C.purple : C.muted} fontFamily="Rajdhani, sans-serif" fontWeight="700">THE</text>
+        <text x={bridge.x} y={bridge.y + 8} textAnchor="middle" fontSize="9" fill={simHighlight ? C.purple : C.muted} fontFamily="Rajdhani, sans-serif" fontWeight="700">BRIDGE</text>
+      </g>
+      {/* Int nodes */}
+      {intNodes.map(n => (
+        <g key={n.id}>
+          <rect x={n.x - 70} y={n.y - 14} width={140} height={28} rx={4} fill="#0a1510" stroke={C.accent} strokeWidth="0.8" />
+          <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize="8" fill={C.accent} fontFamily="Share Tech Mono">{n.label}</text>
+        </g>
+      ))}
+      {/* Labels */}
+      <text x="80" y="14" textAnchor="middle" fontSize="8" fill={C.red} fontFamily="Share Tech Mono" opacity="0.6">DRISHTI (EXTERNAL)</text>
+      <text x="480" y="14" textAnchor="middle" fontSize="8" fill={C.accent} fontFamily="Share Tech Mono" opacity="0.6">KAVACH (INTERNAL)</text>
+    </svg>
+  );
+}
+
+/* ── AI ANALYST PANEL ── */
+function AIAnalyst() {
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const analyze = async () => {
+    if (!input.trim()) return;
+    setLoading(true);
+    setResult(null);
+    setError(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `You are SENTINEL-AI, a cybersecurity threat analyst for the Municipal Corporation of Delhi (MCD). Analyze the input (could be a domain name, IP address, log event, or phishing message) and respond ONLY with a JSON object (no markdown, no backticks) with this exact structure:
+{
+  "threat_score": <0-100 integer>,
+  "severity": "<CRITICAL|HIGH|MEDIUM|LOW|SAFE>",
+  "threat_type": "<brief type e.g. Typosquatting, Credential Phishing, Port Scan, etc>",
+  "indicators": ["<indicator 1>", "<indicator 2>", "<indicator 3>"],
+  "recommendation": "<1-2 sentence action recommendation>",
+  "bridge_risk": "<LOW|MEDIUM|HIGH — risk this connects to an internal attack>",
+  "analyst_note": "<1 sentence as if a senior SOC analyst wrote it>"
+}`,
+          messages: [{ role: "user", content: `Analyze this for MCD threat: ${input}` }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.map(b => b.text || "").join("") || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      setResult(parsed);
+    } catch (e) {
+      setError("Analysis failed. Check API connectivity.");
+    }
+    setLoading(false);
+  };
+
+  const examples = ["mcd-aadhaar-verify.xyz", "185.220.101.47", "47 failed logins in 90s – Central Zone", "Your MCD property tax is overdue, click here to pay: bit.ly/mcd-pay"];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 10, fontSize: 10, color: C.muted }}>Enter domain, IP, log event, or phishing message:</div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && analyze()}
+          placeholder="e.g. mcd-aadhaar-verify.xyz"
+          style={{
+            flex: 1, background: "#040608", border: `1px solid ${C.border}`, borderRadius: 4,
+            padding: "8px 12px", color: C.accent, fontFamily: "Share Tech Mono, monospace",
+            fontSize: 12, outline: "none"
+          }}
+        />
+        <button onClick={analyze} disabled={loading || !input.trim()} style={{
+          background: loading ? C.dim : C.accent, color: "#000", border: "none",
+          padding: "8px 20px", borderRadius: 4, cursor: loading ? "default" : "pointer",
+          fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em"
+        }}>
+          {loading ? "ANALYZING..." : "ANALYZE"}
+        </button>
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+        {examples.map(ex => (
+          <button key={ex} onClick={() => setInput(ex)} style={{
+            background: "transparent", border: `1px solid ${C.border}`, color: C.muted,
+            padding: "2px 8px", borderRadius: 3, cursor: "pointer",
+            fontFamily: "Share Tech Mono, monospace", fontSize: 9
+          }}>{ex.length > 30 ? ex.slice(0, 30) + "…" : ex}</button>
+        ))}
+      </div>
+
+      {error && <div style={{ color: C.red, fontSize: 11, padding: 12, background: "#ff2d3a10", borderRadius: 4 }}>{error}</div>}
+
+      {loading && (
+        <div style={{ textAlign: "center", padding: 32, color: C.accent, fontFamily: "Share Tech Mono, monospace", fontSize: 12 }}>
+          <div style={{ animation: "spin 1s linear infinite", display: "inline-block", fontSize: 24, marginBottom: 8 }}>◈</div>
+          <div>SENTINEL-AI ANALYZING...</div>
+          <div style={{ fontSize: 9, color: C.muted, marginTop: 4 }}>Running Levenshtein, perceptual hash, TF-IDF checks</div>
+        </div>
+      )}
+
+      {result && (
+        <div style={{ animation: "fadeIn 0.4s ease" }}>
+          {/* Score bar */}
+          <div style={{
+            background: SEV_BG[result.severity], border: `1px solid ${SEV_COLOR[result.severity]}44`,
+            borderRadius: 6, padding: 16, marginBottom: 12
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, fontFamily: "Share Tech Mono, monospace" }}>THREAT SCORE</div>
+                <div style={{ fontSize: 52, fontWeight: 700, color: SEV_COLOR[result.severity], fontFamily: "Rajdhani, sans-serif", lineHeight: 1 }}>{result.threat_score}</div>
+                <div style={{ fontSize: 10, color: C.muted }}>/100</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <Tag label={result.severity} />
+                <div style={{ fontSize: 11, color: SEV_COLOR[result.severity], marginTop: 6, fontFamily: "Share Tech Mono, monospace" }}>{result.threat_type}</div>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>BRIDGE RISK: <span style={{ color: result.bridge_risk === "HIGH" ? C.red : result.bridge_risk === "MEDIUM" ? C.amber : C.accent }}>{result.bridge_risk}</span></div>
+              </div>
+            </div>
+            <Bar val={result.threat_score} color={SEV_COLOR[result.severity]} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 4, padding: 12 }}>
+              <div style={{ fontSize: 9, color: C.muted, letterSpacing: "0.15em", marginBottom: 8, fontFamily: "Share Tech Mono, monospace" }}>INDICATORS</div>
+              {result.indicators?.map((ind, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 5 }}>
+                  <span style={{ color: C.amber, fontSize: 10, marginTop: 1 }}>›</span>
+                  <span style={{ fontSize: 11, color: C.text }}>{ind}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 4, padding: 12 }}>
+              <div style={{ fontSize: 9, color: C.muted, letterSpacing: "0.15em", marginBottom: 8, fontFamily: "Share Tech Mono, monospace" }}>RECOMMENDATION</div>
+              <div style={{ fontSize: 11, color: C.text, lineHeight: 1.6 }}>{result.recommendation}</div>
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 9, color: C.purple, letterSpacing: "0.1em", marginBottom: 4, fontFamily: "Share Tech Mono, monospace" }}>SOC ANALYST NOTE</div>
+                <div style={{ fontSize: 11, color: C.muted, fontStyle: "italic" }}>{result.analyst_note}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── MAIN DASHBOARD ── */
+export default function SentinelV2() {
+  const [tab, setTab] = useState("overview");
+  const [time, setTime] = useState(new Date());
+  const [events, setEvents] = useState(INIT_EVENTS);
+  const [domains, setDomains] = useState(INIT_DOMAINS);
+  const [correlations] = useState(INIT_CORRELATIONS);
+  const [feed, setFeed] = useState([]);
+  const [simActive, setSimActive] = useState(false);
+  const [simStep, setSimStep] = useState(0);
+  const [simLog, setSimLog] = useState([]);
+  const [alertBanner, setAlertBanner] = useState(null);
+  const simRef = useRef(null);
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet"; link.href = FONT_LINK;
+    document.head.appendChild(link);
+    return () => document.head.removeChild(link);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Passive feed
+  useEffect(() => {
+    const msgs = [
+      { actor: "DRISHTI", msg: "CertStream monitoring active — 18,447 domains tracked", sev: "INFO" },
+      { actor: "KAVACH", msg: "Login anomaly – South Zone (Z-score: 2.8)", sev: "MEDIUM" },
+      { actor: "DRISHTI", msg: "New SSL cert: mcd-delhi-online.net — similarity check initiated", sev: "MEDIUM" },
+      { actor: "KAVACH", msg: "Port scan detected – NW Zone — 134 ports in 45s", sev: "HIGH" },
+      { actor: "BRIDGE", msg: "Correlation engine: 3 events clustered in 4h window", sev: "HIGH" },
+      { actor: "KAVACH", msg: "Off-hours privileged access — Civil Lines Zone", sev: "HIGH" },
+      { actor: "DRISHTI", msg: "Takedown confirmed: delhi-mcd-portal.net offline", sev: "INFO" },
+    ];
+    let i = 0;
+    const id = setInterval(() => {
+      const m = msgs[i % msgs.length];
+      setFeed(prev => [{ ...m, ts: ts(), id: Date.now() }, ...prev].slice(0, 20));
+      i++;
+    }, 3500);
+    return () => clearInterval(id);
+  }, []);
+
+  // Attack simulation
+  const runSim = useCallback(() => {
+    if (simActive) return;
+    setSimActive(true);
+    setSimStep(0);
+    setSimLog([]);
+    setTab("sim");
+    SIM_STEPS.forEach((step, idx) => {
+      setTimeout(() => {
+        setSimLog(prev => [...prev, { ...step, ts: ts() }]);
+        setSimStep(idx);
+        if (step.sev === "CRITICAL") {
+          setAlertBanner(step.msg);
+          setTimeout(() => setAlertBanner(null), 4000);
+        }
+        if (idx === SIM_STEPS.length - 1) {
+          setTimeout(() => setSimActive(false), 2000);
+        }
+      }, step.ms);
+    });
+  }, [simActive]);
+
+  const activeThreats = events.filter(e => !e.resolved).length;
+  const critCount = events.filter(e => e.severity === "CRITICAL" && !e.resolved).length;
+  const activePhish = domains.filter(d => d.status === "LIVE").length;
+
+  const TABS = [
+    { id: "overview", label: "OVERVIEW" },
+    { id: "drishti",  label: "◈ DRISHTI" },
+    { id: "kavach",   label: "◉ KAVACH" },
+    { id: "bridge",   label: "⬢ BRIDGE" },
+    { id: "ai",       label: "✦ AI ANALYST" },
+    { id: "sim",      label: simActive ? "▶ SIM LIVE" : "▶ ATTACK SIM" },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "Share Tech Mono, monospace", fontSize: 12, overflowX: "hidden" }}>
+      <style>{`
+        @import url('${FONT_LINK}');
+        @keyframes ping { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+        @keyframes scanline { 0% { top: -2%; } 100% { top: 102%; } }
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 3px; height: 3px; background: transparent; }
+        ::-webkit-scrollbar-thumb { background: ${C.muted}; border-radius: 2px; }
+        input:focus { border-color: ${C.accent} !important; }
+        .tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; padding: 10px 14px; font-family: Share Tech Mono, monospace; font-size: 10px; letter-spacing: 0.15em; color: ${C.muted}; transition: all 0.15s; }
+        .tab:hover { color: ${C.text}; }
+        .tab.active { color: ${C.accent}; border-bottom-color: ${C.accent}; }
+        .tab.sim-active { color: ${C.red}; border-bottom-color: ${C.red}; animation: blink 1s ease infinite; }
+        .btn { background: none; border: 1px solid ${C.muted}; color: ${C.muted}; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-family: Share Tech Mono, monospace; font-size: 10px; letter-spacing: 0.1em; transition: all 0.15s; }
+        .btn:hover { border-color: ${C.accent}; color: ${C.accent}; }
+        .btn-red { border-color: ${C.red}; color: ${C.red}; }
+        .btn-red:hover { background: ${C.red}; color: #000; }
+        .btn-accent { border-color: ${C.accent}; color: ${C.accent}; }
+        .btn-accent:hover { background: ${C.accent}; color: #000; }
+        .btn-sim { border-color: ${C.amber}; color: ${C.amber}; padding: 8px 20px; font-size: 12px; }
+        .btn-sim:hover { background: ${C.amber}; color: #000; }
+        tr:hover td { background: #0a1510 !important; }
+        .feed-item { animation: fadeIn 0.3s ease; }
+      `}</style>
+
+      {/* Scanline */}
+      <div style={{ position: "fixed", left: 0, right: 0, height: 2, background: `linear-gradient(transparent, ${C.accent}22, transparent)`, animation: "scanline 10s linear infinite", pointerEvents: "none", zIndex: 999 }} />
+
+      {/* Alert Banner */}
+      {alertBanner && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 998,
+          background: C.red, color: "#000", padding: "10px 28px",
+          fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: 14,
+          letterSpacing: "0.08em", animation: "slideDown 0.3s ease",
+          display: "flex", alignItems: "center", gap: 10
+        }}>
+          <span style={{ animation: "blink 0.5s ease infinite" }}>⚠</span>
+          CRITICAL ALERT: {alertBanner}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 24px", borderBottom: `1px solid ${C.border}`,
+        background: "#050809", position: "sticky", top: 0, zIndex: 50, height: 52
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 4, background: `linear-gradient(135deg, ${C.accent}, ${C.blue})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "Rajdhani, sans-serif", fontWeight: 900, fontSize: 16, color: "#000"
+          }}>S</div>
+          <div>
+            <div style={{ fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: 16, color: "#fff", letterSpacing: "0.2em" }}>SENTINEL</div>
+            <div style={{ fontSize: 8, color: C.muted, letterSpacing: "0.2em" }}>MCD UNIFIED CYBER DEFENSE — INDIA INNOVATES 2026</div>
+          </div>
+          <div style={{ width: 1, height: 28, background: C.border, margin: "0 8px" }} />
+          <div style={{ display: "flex", gap: 6 }}>
+            <GlowDot color={C.accent} pulse />
+            <span style={{ fontSize: 9, color: C.accent, letterSpacing: "0.1em" }}>SYSTEMS NOMINAL</span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 0 }}>
+          {TABS.map(t => (
+            <button key={t.id} className={`tab ${tab === t.id ? "active" : ""} ${t.id === "sim" && simActive ? "sim-active" : ""}`}
+              onClick={() => { setTab(t.id); if (t.id === "sim" && !simActive && simLog.length === 0) runSim(); }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ fontFamily: "Share Tech Mono, monospace", textAlign: "right" }}>
+          <div style={{ fontSize: 18, color: C.accent, letterSpacing: "0.05em" }}>{time.toLocaleTimeString("en-IN", { hour12: false })}</div>
+          <div style={{ fontSize: 8, color: C.muted }}>{time.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</div>
+        </div>
+      </div>
+
+      <div style={{ padding: "18px 24px", maxWidth: 1320, margin: "0 auto" }}>
+
+        {/* ─── OVERVIEW ─── */}
+        {tab === "overview" && (
+          <div style={{ animation: "fadeIn 0.3s ease" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+              <KPICard label="ACTIVE THREATS" value={activeThreats} sub={`${critCount} critical`} color={C.red} delta={12} />
+              <KPICard label="LIVE PHISHING SITES" value={activePhish} sub="monitored externally" color={C.amber} delta={8} />
+              <KPICard label="LOGIN ANOMALIES" value={247} sub="last 60 min — Z >3" color={C.blue} />
+              <KPICard label="BRIDGE CORRELATIONS" value={correlations.filter(c=>c.confirmed).length} sub="confirmed chains" color={C.purple} />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 280px", gap: 14, marginBottom: 14 }}>
+              {/* Radar */}
+              <Panel title="◉ ZONE RADAR — 12 ZONES" accent={C.accent}>
+                <RadarMap events={events} />
+              </Panel>
+
+              {/* Bridge graph */}
+              <Panel title="⬢ BRIDGE — ATTACK CORRELATION MAP" accent={C.purple}>
+                <BridgeGraph correlations={correlations} simActive={simActive} simStep={simStep} />
+                <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 9, color: C.muted }}>
+                  <span style={{ color: C.red }}>● DRISHTI (external)</span>
+                  <span style={{ color: C.purple }}>● BRIDGE (correlation)</span>
+                  <span style={{ color: C.accent }}>● KAVACH (internal)</span>
+                </div>
+              </Panel>
+
+              {/* Live feed */}
+              <Panel title="⬡ LIVE THREAT FEED" accent={C.accent} style={{ overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <GlowDot color={C.accent} pulse />
+                  <span style={{ fontSize: 9, color: C.accent }}>REAL-TIME</span>
+                </div>
+                <div style={{ height: 220, overflowY: "auto" }}>
+                  {feed.map(item => (
+                    <div key={item.id} className="feed-item" style={{
+                      padding: "6px 8px", marginBottom: 4, borderRadius: 3,
+                      background: SEV_BG[item.sev] || "#0a0c10",
+                      borderLeft: `2px solid ${ACTOR_COLOR[item.actor] || C.muted}`
+                    }}>
+                      <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontSize: 8, color: ACTOR_COLOR[item.actor], fontWeight: 700 }}>{item.actor}</span>
+                        <span style={{ fontSize: 8, color: C.muted }}>{item.ts}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: C.text, lineHeight: 1.4 }}>{item.msg}</div>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+
+            {/* Quick stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
+              {[
+                { label: "Domains Monitored", val: "18,447", color: C.blue },
+                { label: "Computers Covered", val: "2,400", color: C.accent },
+                { label: "IT Staff Supported", val: "40", color: C.muted },
+                { label: "Zones Protected", val: "12", color: C.accent },
+                { label: "Avg Detection Time", val: "< 4 min", color: C.amber },
+              ].map(s => (
+                <div key={s.label} style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 4, padding: "10px 14px", textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: "Rajdhani, sans-serif" }}>{s.val}</div>
+                  <div style={{ fontSize: 9, color: C.muted, marginTop: 3 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── DRISHTI ─── */}
+        {tab === "drishti" && (
+          <div style={{ animation: "fadeIn 0.3s ease" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}>
+              {[
+                { label: "CERTSTREAM ACTIVE", val: "LIVE", color: C.accent },
+                { label: "DOMAINS TRACKED", val: "18,447", color: C.blue },
+                { label: "DETECTED TODAY", val: "5", color: C.red },
+                { label: "TAKEDOWNS SENT", val: "2", color: C.amber },
+              ].map(s => (
+                <Panel key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 9, color: C.muted, marginBottom: 6, letterSpacing: "0.15em" }}>{s.label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: s.color, fontFamily: "Rajdhani, sans-serif" }}>{s.val}</div>
+                </Panel>
+              ))}
+            </div>
+
+            <Panel title="DETECTED PHISHING DOMAINS" accent={C.red} style={{ marginBottom: 14 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                    {["ID", "Domain", "Similarity Score", "Type", "Age", "Status", "Action"].map(h => (
+                      <th key={h} style={{ padding: "6px 10px", textAlign: "left", fontSize: 8, color: C.muted, letterSpacing: "0.15em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {domains.map(d => (
+                    <tr key={d.id} style={{ borderBottom: `1px solid ${C.border}22` }}>
+                      <td style={{ padding: "9px 10px", color: C.muted, fontSize: 10 }}>{d.id}</td>
+                      <td style={{ padding: "9px 10px", color: C.red, fontWeight: 600 }}>{d.domain}</td>
+                      <td style={{ padding: "9px 10px", minWidth: 160 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ flex: 1 }}><Bar val={d.sim} color={d.sim > 90 ? C.red : d.sim > 80 ? C.amber : C.blue} /></div>
+                          <span style={{ fontSize: 11, color: "#fff", width: 32 }}>{d.sim}%</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "9px 10px", fontSize: 10, color: C.text }}>{d.type}</td>
+                      <td style={{ padding: "9px 10px", fontSize: 10, color: C.muted }}>{d.age}</td>
+                      <td style={{ padding: "9px 10px" }}>
+                        <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 3, background: d.status === "LIVE" ? C.red + "22" : d.status === "TAKEDOWN" ? C.accent + "22" : C.amber + "22", color: d.status === "LIVE" ? C.red : d.status === "TAKEDOWN" ? C.accent : C.amber, fontWeight: 700 }}>{d.status}</span>
+                      </td>
+                      <td style={{ padding: "9px 10px" }}>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button className="btn btn-red" onClick={() => setDomains(prev => prev.map(x => x.id === d.id ? { ...x, status: "TAKEDOWN" } : x))}>TAKEDOWN</button>
+                          <button className="btn">REPORT</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Panel>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+              {[
+                { name: "Levenshtein Distance", icon: "◈", desc: "Typosquatting — edit distance ≤ 3", rate: "847 checks/min", color: C.blue },
+                { name: "Perceptual Hash (dHash)", icon: "◉", desc: "Visual clone detection >80% match", rate: "312 scans/min", color: C.amber },
+                { name: "TF-IDF + Cosine", icon: "◆", desc: "Phishing SMS/WhatsApp clustering", rate: "1,204 msgs/min", color: C.purple },
+                { name: "HTML Form Analysis", icon: "⬡", desc: "Aadhaar + payment form detection", rate: "Real-time", color: C.accent },
+              ].map(m => (
+                <Panel key={m.name} accent={m.color} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 28, color: m.color, marginBottom: 8 }}>{m.icon}</div>
+                  <div style={{ fontSize: 12, fontFamily: "Rajdhani, sans-serif", fontWeight: 700, color: "#fff", marginBottom: 4 }}>{m.name}</div>
+                  <div style={{ fontSize: 9, color: C.muted, marginBottom: 10 }}>{m.desc}</div>
+                  <div style={{ fontSize: 11, color: m.color }}>{m.rate}</div>
+                </Panel>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── KAVACH ─── */}
+        {tab === "kavach" && (
+          <div style={{ animation: "fadeIn 0.3s ease" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 14, marginBottom: 14 }}>
+              <Panel title="◉ 12-ZONE RADAR" accent={C.accent}>
+                <RadarMap events={events} />
+              </Panel>
+              <Panel title="DETECTION RULES ENGINE" accent={C.accent}>
+                {[
+                  { name: "Failed Login Spike", rule: "> 10 failures in 5 min", triggers: 34, sev: "CRITICAL" },
+                  { name: "Off-Hours Privileged Access", rule: "Outside 09:00–19:00", triggers: 12, sev: "HIGH" },
+                  { name: "Port Scan Detection", rule: "> 100 ports in 60s", triggers: 8, sev: "HIGH" },
+                  { name: "Large Outbound Transfer", rule: "> 500MB in session", triggers: 3, sev: "MEDIUM" },
+                  { name: "Foreign IP Connection", rule: "Non-Indian IP on gov system", triggers: 19, sev: "CRITICAL" },
+                ].map(r => (
+                  <div key={r.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.border}22` }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: "#fff", fontFamily: "Rajdhani, sans-serif", fontWeight: 600 }}>{r.name}</div>
+                      <div style={{ fontSize: 9, color: C.muted }}>{r.rule}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: SEV_COLOR[r.sev], fontFamily: "Rajdhani, sans-serif" }}>{r.triggers}</div>
+                        <div style={{ fontSize: 8, color: C.muted }}>triggers today</div>
+                      </div>
+                      <div style={{ width: 36, height: 18, borderRadius: 9, background: C.accent, cursor: "pointer", position: "relative" }}>
+                        <div style={{ position: "absolute", right: 3, top: 3, width: 12, height: 12, borderRadius: "50%", background: "#000" }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </Panel>
+            </div>
+
+            <Panel title="ACTIVE EVENTS — CLICK RESOLVE TO DISMISS" accent={C.blue}>
+              <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead style={{ position: "sticky", top: 0, background: C.panel }}>
+                    <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                      {["ID", "Event", "Zone", "Severity", "Timestamp", "Action"].map(h => (
+                        <th key={h} style={{ padding: "6px 10px", textAlign: "left", fontSize: 8, color: C.muted, letterSpacing: "0.15em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.filter(e => !e.resolved).map(e => (
+                      <tr key={e.id}>
+                        <td style={{ padding: "9px 10px", color: C.muted, fontSize: 10 }}>{e.id}</td>
+                        <td style={{ padding: "9px 10px", color: C.text, fontSize: 11 }}>{e.label}</td>
+                        <td style={{ padding: "9px 10px", color: C.accent, fontSize: 11 }}>{e.zone}</td>
+                        <td style={{ padding: "9px 10px" }}><Tag label={e.sev} /></td>
+                        <td style={{ padding: "9px 10px", color: C.muted, fontSize: 10 }}>{e.ts}</td>
+                        <td style={{ padding: "9px 10px" }}>
+                          <button className="btn btn-accent" onClick={() => setEvents(prev => prev.map(x => x.id === e.id ? { ...x, resolved: true } : x))}>RESOLVE</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          </div>
+        )}
+
+        {/* ─── BRIDGE ─── */}
+        {tab === "bridge" && (
+          <div style={{ animation: "fadeIn 0.3s ease" }}>
+            <Panel title="⬢ BRIDGE — CORRELATION ENGINE" accent={C.purple} style={{ marginBottom: 14 }}>
+              <BridgeGraph correlations={correlations} simActive={false} simStep={0} />
+            </Panel>
+
+            {correlations.map(c => (
+              <div key={c.id} style={{
+                background: C.panel, border: `1px solid ${c.confirmed ? C.red + "44" : C.amber + "44"}`,
+                borderRadius: 6, padding: 16, marginBottom: 10, animation: "fadeIn 0.3s ease"
+              }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ fontSize: 9, color: C.muted }}>{c.id}</span>
+                  <Tag label={c.confirmed ? "CONFIRMED" : "INVESTIGATING"} color={c.confirmed ? C.red : C.amber} />
+                  <span style={{ fontSize: 9, color: C.muted }}>Detected {c.ts}</span>
+                  <span style={{ fontSize: 9, color: C.purple }}>{c.type}</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr auto", gap: 12, alignItems: "center" }}>
+                  <div style={{ background: "#0a0408", border: `1px solid ${C.red}44`, borderRadius: 6, padding: "10px 14px" }}>
+                    <div style={{ fontSize: 8, color: C.red, marginBottom: 4, letterSpacing: "0.15em" }}>DRISHTI — EXTERNAL</div>
+                    <div style={{ fontSize: 12, color: C.amber }}>{c.ext}</div>
+                  </div>
+                  <div style={{ textAlign: "center", padding: "0 8px" }}>
+                    <div style={{ color: C.purple, fontSize: 16 }}>⬢</div>
+                    <div style={{ fontSize: 8, color: C.muted }}>BRIDGE</div>
+                  </div>
+                  <div style={{ background: "#040a08", border: `1px solid ${C.accent}44`, borderRadius: 6, padding: "10px 14px" }}>
+                    <div style={{ fontSize: 8, color: C.accent, marginBottom: 4, letterSpacing: "0.15em" }}>KAVACH — INTERNAL</div>
+                    <div style={{ fontSize: 12, color: C.text }}>{c.int}</div>
+                  </div>
+                  <div style={{ textAlign: "center", minWidth: 80 }}>
+                    <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>CONFIDENCE</div>
+                    <div style={{ fontSize: 36, fontWeight: 700, color: c.conf > 90 ? C.red : C.amber, fontFamily: "Rajdhani, sans-serif", lineHeight: 1 }}>{c.conf}%</div>
+                    <Bar val={c.conf} color={c.conf > 90 ? C.red : C.amber} />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <Panel title="🐦 CANARY CREDENTIAL SYSTEM — FORENSIC PROOF" accent={C.amber}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                    {["Time", "Credential", "Injected Into", "Status", "Evidence"].map(h => (
+                      <th key={h} style={{ padding: "6px 10px", textAlign: "left", fontSize: 8, color: C.muted, letterSpacing: "0.15em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { ts: "08:44:12", cred: "suresh.kumar.2287", site: "mcd-services-delhi.com", status: "STOLEN" },
+                    { ts: "06:31:05", cred: "rajesh.sharma.4419", site: "delhi-mcd-portal.net", status: "STOLEN" },
+                    { ts: "15:12:30", cred: "priya.mehra.9901", site: "mcd-tax-pay.org", status: "MONITORING" },
+                  ].map((r, i) => (
+                    <tr key={i} style={{ borderBottom: `1px solid ${C.border}22` }}>
+                      <td style={{ padding: "9px 10px", color: C.muted, fontSize: 10 }}>{r.ts}</td>
+                      <td style={{ padding: "9px 10px", color: C.amber, fontFamily: "Share Tech Mono" }}>{r.cred}</td>
+                      <td style={{ padding: "9px 10px", color: C.red, fontSize: 11 }}>{r.site}</td>
+                      <td style={{ padding: "9px 10px" }}>
+                        <Tag label={r.status} color={r.status === "STOLEN" ? C.red : C.amber} />
+                      </td>
+                      <td style={{ padding: "9px 10px" }}>
+                        <button className="btn btn-accent">VIEW TRACE</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Panel>
+          </div>
+        )}
+
+        {/* ─── AI ANALYST ─── */}
+        {tab === "ai" && (
+          <div style={{ animation: "fadeIn 0.3s ease" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14 }}>
+              <Panel title="✦ SENTINEL-AI — THREAT ANALYSIS ENGINE (POWERED BY CLAUDE)" accent={C.purple}>
+                <AIAnalyst />
+              </Panel>
+              <div>
+                <Panel title="MODEL STACK" accent={C.muted} style={{ marginBottom: 12 }}>
+                  {[
+                    { name: "Levenshtein Distance", use: "Typosquatting" },
+                    { name: "Perceptual Hash", use: "Visual clones" },
+                    { name: "TF-IDF + Cosine", use: "Phishing clusters" },
+                    { name: "Z-Score Anomaly", use: "Login spikes" },
+                    { name: "Claude AI", use: "Deep threat reasoning" },
+                  ].map(m => (
+                    <div key={m.name} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${C.border}22`, fontSize: 10 }}>
+                      <span style={{ color: C.text }}>{m.name}</span>
+                      <span style={{ color: C.muted }}>{m.use}</span>
+                    </div>
+                  ))}
+                </Panel>
+                <Panel title="WHY EXPLAINABLE AI?" accent={C.accent}>
+                  <div style={{ fontSize: 10, color: C.muted, lineHeight: 1.7 }}>
+                    SENTINEL uses transparent mathematical models — no black-box AI for classification. Claude AI is used only for natural language threat reasoning, keeping the system auditable and legally defensible for government use.
+                  </div>
+                </Panel>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── ATTACK SIMULATION ─── */}
+        {tab === "sim" && (
+          <div style={{ animation: "fadeIn 0.3s ease" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <div style={{ fontFamily: "Rajdhani, sans-serif", fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "0.1em" }}>▶ LIVE ATTACK SIMULATION</div>
+                <div style={{ fontSize: 10, color: C.muted }}>Watch a real phishing → breach → BRIDGE correlation play out in real-time</div>
+              </div>
+              <button className="btn btn-sim" onClick={runSim} disabled={simActive}>
+                {simActive ? "● SIMULATION RUNNING..." : "▶ RUN SIMULATION"}
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14 }}>
+              {/* Log terminal */}
+              <Panel title="// SENTINEL ATTACK TIMELINE" accent={C.accent} style={{ fontFamily: "Share Tech Mono, monospace" }}>
+                {simLog.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>
+                    <div style={{ fontSize: 32, marginBottom: 12 }}>▶</div>
+                    <div>Press RUN SIMULATION to begin</div>
+                    <div style={{ fontSize: 9, marginTop: 6 }}>Simulates: fake domain created → phishing → internal breach → BRIDGE correlation</div>
+                  </div>
+                )}
+                {simLog.map((s, i) => (
+                  <div key={i} className="feed-item" style={{
+                    padding: "10px 12px", marginBottom: 6, borderRadius: 4,
+                    background: SEV_BG[s.sev] || "#0a0c10",
+                    borderLeft: `3px solid ${ACTOR_COLOR[s.actor] || C.muted}`,
+                    opacity: simActive && i === simLog.length - 1 ? 1 : 0.85,
+                  }}>
+                    <div style={{ display: "flex", gap: 10, marginBottom: 4, alignItems: "center" }}>
+                      <span style={{ fontSize: 9, color: ACTOR_COLOR[s.actor], fontWeight: 700, letterSpacing: "0.1em" }}>{s.actor}</span>
+                      <span style={{ fontSize: 8, color: C.muted }}>{s.ts}</span>
+                      <Tag label={s.sev} />
+                    </div>
+                    <div style={{ fontSize: 11, color: s.sev === "CRITICAL" ? "#fff" : C.text, lineHeight: 1.5 }}>{s.msg}</div>
+                  </div>
+                ))}
+                {simActive && (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "8px 0", color: C.accent, fontSize: 10 }}>
+                    <span style={{ animation: "blink 0.8s ease infinite" }}>█</span>
+                    <span>Processing...</span>
+                  </div>
+                )}
+              </Panel>
+
+              {/* Progress */}
+              <div>
+                <Panel title="SIMULATION PROGRESS" accent={C.purple} style={{ marginBottom: 12 }}>
+                  {SIM_STEPS.map((step, i) => {
+                    const done = simLog.length > i;
+                    const active = simActive && simLog.length === i;
+                    return (
+                      <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, opacity: done ? 1 : 0.3, transition: "opacity 0.5s" }}>
+                        <div style={{ width: 16, height: 16, borderRadius: "50%", border: `1px solid ${ACTOR_COLOR[step.actor]}`, background: done ? ACTOR_COLOR[step.actor] : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, fontSize: 8, color: done ? "#000" : "transparent" }}>✓</div>
+                        <div>
+                          <div style={{ fontSize: 9, color: ACTOR_COLOR[step.actor], letterSpacing: "0.1em" }}>{step.actor}</div>
+                          <div style={{ fontSize: 9, color: C.muted, lineHeight: 1.4 }}>{step.msg.slice(0, 50)}...</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </Panel>
+                <Panel title="BRIDGE GRAPH — LIVE" accent={C.purple}>
+                  <BridgeGraph correlations={correlations} simActive={simActive} simStep={simLog.length} />
+                </Panel>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
