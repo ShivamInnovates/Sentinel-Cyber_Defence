@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* ── PALETTE FROM IMAGE ── */
+  --navy:         #0B1E40;   /* darkest — main bg */
+  --mauve:        #C340B3;   /* actually the hex shown: dusty mauve-pink */
+  --blush:        #E8B1C1;   /* light blush pink */
+  --sky:          #6384BE;   /* medium sky blue */
+  --steel:        #264158;   /* steel blue */
+  --deep-navy:    #0B1B33;   /* deepest navy */
+
+  /* ── BACKGROUNDS ── */
+  --bg-deep:      #fafbfd;   /* was #0B1E40 */
+--bg-surface:   #E8EEF8;   /* was #0f2450 */
+--bg-raised:    #edf3fd;   /* was #132d5e */
+--bg-card:      #FFFFFF;   /* was #142f62 */
+--bg-hover:     #D4DDEF;   /* was #1a3870 */
+
+  /* ── BORDERS ── */
+  --border-dim:   #C2CFEA;   /* was #1e3a6e */
+--border-mid:   #a8bdd8;   /* was #264158 */
+--border-bright:#6384BE44;
+
+  /* ── ACCENTS ── */
+  --accent-primary:   #6384BE;   /* sky blue — primary actions */
+  --accent-secondary: #E8B1C1;   /* blush — highlights */
+  --accent-glow:      rgba(99,132,190,0.15);
+
+  /* ── SEMANTIC (alerts only) ── */
+  --critical:         #EF4444;
+  --critical-bg:      rgba(239,68,68,0.10);
+  --critical-border:  rgba(239,68,68,0.30);
+  --high:             #F59E0B;
+  --high-bg:          rgba(245,158,11,0.10);
+  --high-border:      rgba(245,158,11,0.30);
+  --success:          #22C55E;
+  --success-bg:       rgba(34,197,94,0.10);
+  --success-border:   rgba(34,197,94,0.30);
+  --medium:           #6384BE;
+  --medium-bg:        rgba(99,132,190,0.12);
+  --medium-border:    rgba(99,132,190,0.30);
+  --low:              #E8B1C1;
+  --low-bg:           rgba(232,177,193,0.10);
+  --low-border:       rgba(232,177,193,0.25);
+  --info:             #E8B1C1;
+  --info-bg:          rgba(232,177,193,0.10);
+
+  /* ── TEXT ── */
+  --text-primary:   #0B1E40;   /* was #F0F4FF — flip to dark */
+--text-secondary: #264158;   /* was #A8BEDD */
+--text-muted:     #6384BE;   /* stays same */
+--text-dim:       #A8BDD8;   /* was #2e4d7a */
+
+  /* ── TYPOGRAPHY ── */
+  --font-display: 'Montserrat', sans-serif;
+  --font-body:    'Poppins', sans-serif;
+  --font-mono:    'Montserrat', sans-serif;
+
+  /* ── RADIUS ── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+
+  /* ── SHADOWS ── */
+  --shadow-card: 0 2px 8px rgba(11,30,64,0.08), 0 1px 3px rgba(11,30,64,0.05);
+  --shadow-glow: 0 0 24px rgba(99,132,190,0.15);
+
+  /* ── TRANSITIONS ── */
+  --transition:      0.2s cubic-bezier(0.4,0,0.2,1);
+  --transition-slow: 0.4s cubic-bezier(0.4,0,0.2,1);
+}

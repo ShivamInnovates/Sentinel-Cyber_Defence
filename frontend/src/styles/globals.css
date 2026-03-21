@@ -1,0 +1,72 @@
+@import './variables.css';
+@import 'aos/dist/aos.css';
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+::selection { background: var(--accent-primary); color: #fff; }
+
+/* ── KEYFRAMES ── */
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)} }
+@keyframes ping { 0%{transform:scale(1);opacity:0.8} 100%{transform:scale(2.4);opacity:0} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes scanline { 0%{top:-2%} 100%{top:102%} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+@keyframes countUp { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+
+/* ── UTILITIES ── */
+.fade-in { animation: fadeInUp 0.4s ease both; }
+.mono { font-family: var(--font-mono); }
+
+/* ── CARD ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.card:hover { border-color: var(--border-mid); }
+
+/* ── SKELETON ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-raised) 25%, var(--bg-hover) 50%, var(--bg-raised) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ── FOCUS ── */
+*:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; border-radius: 4px; }
+
+/* ── SCANLINE ── 
+.scanline-overlay {
+  background: linear-gradient(transparent, rgba(99,132,190,0.06), transparent);
+}*/
+
+/* ── GRID BG ── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(99,132,190,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,132,190,0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+[data-aos] { pointer-events: none; }
+[data-aos].aos-animate { pointer-events: auto; }
