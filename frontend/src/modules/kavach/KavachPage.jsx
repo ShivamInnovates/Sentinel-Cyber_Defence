@@ -1,214 +1,160 @@
 import Swal from 'sweetalert2';
 import { useStore } from '../../store';
-import { Panel, SeverityBadge, Button, ModuleHeader, HelpIcon, StatusDot } from '../../components/ui';
-import { ZoneActivityChart } from '../../components/charts';
-import { TOOLTIPS, ZONES } from '../../utils/constants';
+import { SeverityBadge, Button } from '../../components/ui';
+import { ZONES } from '../../utils/constants';
 
 export default function KavachPage() {
   const { events, resolvEvent, zoneActivity } = useStore();
   const unresolved = events.filter(e => !e.resolved);
-  const resolved = events.filter(e => e.resolved);
+  const resolved   = events.filter(e => e.resolved);
 
   const handleResolve = (event) => {
     Swal.fire({
       title: 'Mark as Handled?',
-      html: `
-        <p style="color:#8fb8cc;font-size:14px;margin-bottom:10px">Confirm that this threat has been investigated and handled:</p>
-        <div style="background:#0d2035;border:1px solid #234567;border-radius:8px;padding:12px;margin-bottom:10px">
-          <div style="color:#e8f4f8;font-size:14px;font-weight:600;margin-bottom:4px">${event.label}</div>
-          <div style="color:#4d7a93;font-size:12px">${event.zone} Zone · ${event.timestamp}</div>
-        </div>
-        <p style="color:#4d7a93;font-size:12px">${event.detail}</p>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Mark as Handled',
-      cancelButtonText: 'Not Yet',
-      background: '#081625',
-      color: '#e8f4f8',
-      confirmButtonColor: '#38d9d9',
-      cancelButtonColor: '#234567',
-    }).then(result => {
-      if (result.isConfirmed) {
+      html: `<p style="color:#6B7280;font-size:14px;margin-bottom:10px">Confirm this threat has been investigated:</p><div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:10px"><div style="color:#111827;font-size:14px;font-weight:600;margin-bottom:4px">${event.label}</div><div style="color:#9CA3AF;font-size:12px">${event.zone} Zone · ${event.timestamp}</div></div><p style="color:#9CA3AF;font-size:12px">${event.detail}</p>`,
+      icon: 'question', showCancelButton: true,
+      confirmButtonText: 'Yes, Mark as Handled', cancelButtonText: 'Not Yet',
+      background: '#FFFFFF', color: '#111827',
+      confirmButtonColor: '#6384BE', cancelButtonColor: '#F3F4F6',
+    }).then(r => {
+      if (r.isConfirmed) {
         resolvEvent(event.id);
-        Swal.fire({
-          title: 'Event Resolved',
-          text: 'The threat has been marked as handled and removed from the active queue.',
-          icon: 'success',
-          background: '#081625',
-          color: '#e8f4f8',
-          confirmButtonColor: '#38d9d9',
-          confirmButtonText: 'OK',
-          timer: 2000,
-          timerProgressBar: true,
-        });
+        Swal.fire({ title: 'Event Resolved', text: 'Marked as handled and removed from the active queue.', icon: 'success', background: '#FFFFFF', confirmButtonColor: '#6384BE', timer: 2000, timerProgressBar: true });
       }
     });
   };
 
+  const SEV_C = { CRITICAL: '#DC2626', HIGH: '#D97706', MEDIUM: '#6384BE', LOW: '#9CA3AF' };
+
   const RULES = [
-    { name: 'Failed Login Spike', rule: 'More than 10 failed logins in 5 minutes', detail: 'This catches attackers using stolen passwords to try breaking in.', triggers: 34, sev: 'CRITICAL' },
-    { name: 'Off-Hours Admin Access', rule: 'Admin login outside 9 AM – 7 PM', detail: 'Legitimate staff rarely log in at 3 AM. This flags suspicious after-hours access.', triggers: 12, sev: 'HIGH' },
-    { name: 'Port Scanning', rule: 'More than 100 network ports probed in 60s', detail: 'Attackers scan ports to find weaknesses before breaking in.', triggers: 8, sev: 'HIGH' },
-    { name: 'Large Data Export', rule: 'More than 500MB transferred in one session', detail: 'Normal work doesn\'t involve moving huge files. This catches data theft.', triggers: 3, sev: 'MEDIUM' },
-    { name: 'Foreign IP Access', rule: 'Connection from non-Indian IP address', detail: 'MCD staff work from India. Any foreign IP on internal systems is suspicious.', triggers: 19, sev: 'CRITICAL' },
+    { name: 'Failed Login Spike',     rule: 'More than 10 failed logins in 5 minutes',   detail: 'Catches attackers using stolen passwords to break in.',                           triggers: 34, sev: 'CRITICAL' },
+    { name: 'Off-Hours Admin Access', rule: 'Admin login outside 9 AM – 7 PM',           detail: 'Legitimate staff rarely log in at 3 AM — flags suspicious after-hours access.',   triggers: 12, sev: 'HIGH'     },
+    { name: 'Port Scanning',          rule: '100+ network ports probed in 60 seconds',   detail: 'Attackers scan ports to find weaknesses before breaking in.',                      triggers: 8,  sev: 'HIGH'     },
+    { name: 'Large Data Export',      rule: '500MB+ transferred in one session',          detail: 'Normal work doesn\'t move huge files — catches data theft attempts.',            triggers: 3,  sev: 'MEDIUM'   },
+    { name: 'Foreign IP Access',      rule: 'Connection from a non-Indian IP address',   detail: 'MCD staff work from India. Any foreign IP on internal systems is suspicious.',    triggers: 19, sev: 'CRITICAL' },
   ];
 
-  const sevColors = { CRITICAL: 'var(--critical)', HIGH: 'var(--high)', MEDIUM: 'var(--medium)', LOW: 'var(--low)' };
-
   return (
-    <div style={{ animation: 'fadeInUp 0.4s ease both' }}>
-      <ModuleHeader icon="◆" name="KAVACH" subtitle="Internal network defense — watching 2,400 MCD computers across 12 zones" color="var(--teal-bright)">
-        <Button variant="ghost" size="sm" icon="↻">Refresh</Button>
-      </ModuleHeader>
+    <div>
+      {/* PAGE HEADER */}
+      <div style={{ marginBottom: 40, paddingBottom: 32, borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: '#111827', letterSpacing: '-0.03em', marginBottom: 8 }}>KAVACH</h1>
+          <p style={{ fontSize: 16, color: '#6B7280', lineHeight: 1.6, maxWidth: 560 }}>
+            Internal network defense — watches all 2,400 MCD computers across 12 Delhi zones for suspicious activity, unusual logins, and data theft attempts.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm">↻ Refresh</Button>
+      </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+      {/* HOW IT WORKS */}
+      <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 10, borderLeft: '3px solid #E5E7EB', marginBottom: 36, fontSize: 14, color: '#6B7280', lineHeight: 1.7 }}>
+        💡 <strong style={{ color: '#374151' }}>How KAVACH works:</strong> Every login, file transfer, and network connection is compared against normal patterns. If something is unusual — a login at 3 AM, 47 failed attempts in 90 seconds — KAVACH raises an alert with a plain-English explanation.
+      </div>
+
+      {/* STATS ROW */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 40, paddingBottom: 32, borderBottom: '1px solid #E5E7EB' }}>
         {[
-          { label: 'Active Threats', value: unresolved.length, color: 'var(--critical)', sub: 'Needs attention' },
-          { label: 'Resolved Today', value: resolved.length, color: 'var(--success)', sub: 'Handled by team' },
-          { label: 'Zones Monitored', value: 12, color: 'var(--teal-bright)', sub: 'All online' },
-          { label: 'Computers Covered', value: '2,400', color: 'var(--medium)', sub: 'Real-time monitoring' },
-        ].map(s => (
-          <div key={s.label} data-aos="fade-up" className="card" style={{ padding: '16px 18px', borderTop: `2px solid ${s.color}` }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: s.color, fontFamily: 'var(--font-display)' }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>{s.sub}</div>
+          { label: 'Active Threats',    value: unresolved.length, color: '#DC2626', sub: 'Needs attention now' },
+          { label: 'Resolved Today',    value: resolved.length,   color: '#16A34A', sub: 'Handled by the team' },
+          { label: 'Zones Monitored',   value: 12,                 color: '#6384BE', sub: 'All currently online' },
+          { label: 'Computers Covered', value: '2,400',            color: '#374151', sub: 'Real-time monitoring' },
+        ].map((s, i) => (
+          <div key={s.label} data-aos="fade-up" style={{ padding: '0 32px 0 0', borderRight: i < 3 ? '1px solid #E5E7EB' : 'none' }}>
+            <div style={{ fontSize: 40, fontWeight: 800, color: s.color, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontSize: 12, color: '#9CA3AF' }}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 14, marginBottom: 14 }}>
-        {/* Radar */}
+      {/* ZONE HEATMAP + DETECTION RULES */}
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 48, marginBottom: 40, paddingBottom: 32, borderBottom: '1px solid #E5E7EB' }}>
         <div>
-          <Panel title="◉ 12-Zone Status Heatmap" accent="var(--accent-primary)">
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-    {ZONES.map(z => {
-      const count = unresolved.filter(e => e.zone === z.name).length;
-      const color = count === 0 ? 'var(--success)'
-                  : count === 1 ? 'var(--medium)'
-                  : count === 2 ? 'var(--high)'
-                  : 'var(--critical)';
-      const bg    = count === 0 ? 'var(--success-bg)'
-                  : count === 1 ? 'var(--medium-bg)'
-                  : count === 2 ? 'var(--high-bg)'
-                  : 'var(--critical-bg)';
-      return (
-        <div key={z.id} style={{
-          padding: '10px 8px', borderRadius: 8, textAlign: 'center',
-          background: bg, border: `1px solid ${color}44`,
-          transition: 'all 0.2s ease',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color, fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>{z.id}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', marginTop: 2 }}>{z.name}</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: 'var(--font-display)', marginTop: 4 }}>
-            {count === 0 ? '✓' : count}
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 6 }}>12-Zone Status</h2>
+          <p style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 16 }}>Real-time threat status per zone</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {ZONES.map(z => {
+              const count = unresolved.filter(e => e.zone === z.name).length;
+              const color  = count === 0 ? '#16A34A' : count === 1 ? '#6384BE' : count === 2 ? '#D97706' : '#DC2626';
+              const bg     = count === 0 ? '#F0FDF4' : count === 1 ? '#EFF4FF' : count === 2 ? '#FFFBEB' : '#FEF2F2';
+              const border = count === 0 ? '#BBF7D0' : count === 1 ? '#BFCFEA' : count === 2 ? '#FDE68A' : '#FECACA';
+              return (
+                <div key={z.id} style={{ padding: '9px 6px', borderRadius: 8, textAlign: 'center', background: bg, border: `1px solid ${border}`, transition: 'all 0.2s' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: '0.04em' }}>{z.id}</div>
+                  <div style={{ fontSize: 9, color: '#9CA3AF', marginTop: 1 }}>{z.name}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color, marginTop: 3 }}>{count === 0 ? '✓' : count}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+            {[{ l: 'Clear', c: '#16A34A' }, { l: 'Watch', c: '#6384BE' }, { l: 'Alert', c: '#D97706' }, { l: 'Critical', c: '#DC2626' }].map(l => (
+              <div key={l.l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 7, height: 7, borderRadius: 2, background: l.c }} />
+                <span style={{ fontSize: 10, color: '#9CA3AF' }}>{l.l}</span>
+              </div>
+            ))}
           </div>
         </div>
-      );
-    })}
-  </div>
-  {/* Legend */}
-  <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-    {[
-      { label: 'Clear', color: 'var(--success)' },
-      { label: 'Watch', color: 'var(--medium)' },
-      { label: 'Alert', color: 'var(--high)' },
-      { label: 'Critical', color: 'var(--critical)' },
-    ].map(l => (
-      <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{l.label}</span>
-      </div>
-    ))}
-  </div>
-</Panel>
-          <Panel title="⬡ Zone Activity" accent="var(--medium)">
-            <div style={{ height: 160 }}>
-              <ZoneActivityChart data={zoneActivity} />
-            </div>
-          </Panel>
-        </div>
 
-        {/* Rules engine */}
-        <Panel title="◆ Detection Rules — What KAVACH Watches For" accent="var(--teal-bright)">
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-            These are the automatic rules that trigger alerts. Each rule is designed to catch a specific type of attack.
-          </p>
-          {RULES.map(r => (
-            <div key={r.name} style={{
-              display: 'flex', gap: 14, alignItems: 'center',
-              padding: '12px 0', borderBottom: '1px solid rgba(30,53,80,0.5)',
-            }}>
-              <div style={{ width: 4, height: 44, borderRadius: 2, background: sevColors[r.sev], flexShrink: 0 }} />
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 6 }}>Detection Rules</h2>
+          <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 20 }}>Each rule catches a specific type of attack — automatically, 24/7</p>
+          {RULES.map((r, i) => (
+            <div key={r.name} style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: '14px 0', borderBottom: i < RULES.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+              <div style={{ width: 3, height: 50, borderRadius: 2, background: SEV_C[r.sev], flexShrink: 0, marginTop: 2 }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', marginBottom: 3 }}>{r.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--teal-mid)', fontFamily: 'var(--font-mono)', marginBottom: 3 }}>Rule: {r.rule}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.detail}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{r.name}</div>
+                <div style={{ fontSize: 12, color: '#6384BE', fontFamily: 'IBM Plex Mono, monospace', marginBottom: 4 }}>Rule: {r.rule}</div>
+                <div style={{ fontSize: 13, color: '#6B7280' }}>{r.detail}</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: sevColors[r.sev], fontFamily: 'var(--font-display)' }}>{r.triggers}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>triggers today</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: SEV_C[r.sev], letterSpacing: '-0.02em' }}>{r.triggers}</div>
+                <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4 }}>triggers today</div>
                 <SeverityBadge severity={r.sev} small />
               </div>
             </div>
           ))}
-        </Panel>
+        </div>
       </div>
 
-      {/* Active events table */}
-      <Panel
-        title="⚠ Active Security Events — Action Required"
-        accent="var(--critical)"
-        action={
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-            {unresolved.length} pending
-          </span>
-        }
-      >
-        {unresolved.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--success)' }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>All clear — No active threats</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Great work! All events have been handled.</div>
+      {/* ACTIVE EVENTS TABLE */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 4 }}>Active Security Events</h2>
+            <p style={{ fontSize: 13, color: '#6B7280' }}>Review each event and mark as handled once resolved</p>
           </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: unresolved.length > 0 ? '#DC2626' : '#16A34A' }}>{unresolved.length} pending</span>
+        </div>
+
+        {unresolved.length === 0
+          ? <div style={{ textAlign: 'center', padding: '48px 0', borderTop: '1px solid #E5E7EB' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#16A34A', marginBottom: 4 }}>All clear</div>
+              <div style={{ fontSize: 13, color: '#9CA3AF' }}>No active threats — all events have been resolved.</div>
+            </div>
+          : <table className="data-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-dim)' }}>
-                  {['ID', 'What Happened', 'Zone', 'Severity', 'When', 'What It Means', 'Action'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.14em', fontFamily: 'var(--font-mono)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
+                <tr>{['ID', 'What Happened', 'Zone', 'Severity', 'When', 'What It Means', 'Action'].map(h => <th key={h}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {unresolved.map(e => (
-                  <tr key={e.id}
-                    style={{ borderBottom: '1px solid rgba(30,53,80,0.4)', transition: 'background 0.15s' }}
-                    onMouseEnter={ev => ev.currentTarget.style.background = 'var(--bg-raised)'}
-                    onMouseLeave={ev => ev.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ padding: '12px 12px', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{e.id}</td>
-                    <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{e.label}</td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <span style={{ fontSize: 12, color: 'var(--teal-bright)', fontFamily: 'var(--font-mono)' }}>{e.zone}</span>
-                    </td>
-                    <td style={{ padding: '12px 12px' }}><SeverityBadge severity={e.severity} small /></td>
-                    <td style={{ padding: '12px 12px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{e.timestamp}</td>
-                    <td style={{ padding: '12px 12px', fontSize: 12, color: 'var(--text-secondary)', maxWidth: 220 }}>{e.detail}</td>
-                    <td style={{ padding: '12px 12px' }}>
-                      <Button variant="primary" size="sm" onClick={() => handleResolve(e)}>
-                        Mark Handled
-                      </Button>
-                    </td>
+                  <tr key={e.id}>
+                    <td style={{ color: '#9CA3AF', fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>{e.id}</td>
+                    <td style={{ fontWeight: 600, color: '#111827' }}>{e.label}</td>
+                    <td><span style={{ fontSize: 12, color: '#6384BE', fontWeight: 600 }}>{e.zone}</span></td>
+                    <td><SeverityBadge severity={e.severity} small /></td>
+                    <td style={{ color: '#9CA3AF', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, whiteSpace: 'nowrap' }}>{e.timestamp}</td>
+                    <td style={{ fontSize: 13, color: '#6B7280', maxWidth: 220 }}>{e.detail}</td>
+                    <td><Button variant="accent" size="sm" onClick={() => handleResolve(e)}>Mark Handled</Button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-      </Panel>
+        }
+      </div>
     </div>
   );
 }

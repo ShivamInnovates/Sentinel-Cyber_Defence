@@ -1,196 +1,140 @@
 import { useStore } from '../../store';
-import { KPICard, Panel, SeverityBadge, StatusDot, HelpIcon, Button } from '../../components/ui';
+import { SeverityBadge, Button, HelpIcon } from '../../components/ui';
 import { ThreatTrendChart, SeverityDonut } from '../../components/charts';
-import RadarMap from '../../components/shared/RadarMap';
 import LiveFeed from '../../components/shared/LiveFeed';
 import { TOOLTIPS } from '../../utils/constants';
 
 export default function OverviewPage() {
-  const { kpis, events, correlations, trendData, zoneActivity, setActiveModule } = useStore();
-  const unresolvedEvents = events.filter(e => !e.resolved);
+  const { kpis, events, correlations, trendData, setActiveModule } = useStore();
+  const unresolved = events.filter(e => !e.resolved);
 
   return (
-    <div style={{ animation: 'fadeInUp 0.4s ease both' }}>
-      {/* ── KPI ROW ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-        <KPICard
-          label="Active Threats"
-          value={kpis.activeThreats}
-          sub={`${kpis.criticalCount} critical right now`}
-          color="var(--critical)" icon="⚠" delta={12}
-          tooltip="Total number of security threats that have been detected and not yet resolved."
-          aos="fade-up"
-        />
-        <KPICard
-          label="Live Phishing Sites"
-          value={kpis.livePhishingSites}
-          sub="Fake MCD sites online now"
-          color="var(--high)" icon="◈" delta={8}
-          tooltip="Fake websites impersonating MCD that are currently live and stealing citizen data."
-          aos="fade-up" 
-        />
-        <KPICard
-          label="Login Anomalies"
-          value={kpis.loginAnomalies}
-          sub="Last 60 min — above normal"
-          color="var(--medium)" icon="◉"
-          tooltip={TOOLTIPS.zscore}
-          aos="fade-up"
-        />
-        <KPICard
-          label="Confirmed Attacks"
-          value={correlations.filter(c => c.confirmed).length}
-          sub="Fully traced attack chains"
-          color="var(--mauve-bright)" icon="⬢"
-          tooltip="Complete attack stories confirmed by The Bridge — fake site to internal breach."
-          aos="fade-up"
-        />
+    <div>
+      {/* PAGE HEADER */}
+      <div style={{ marginBottom: 40, paddingBottom: 32, borderBottom: '1px solid #E5E7EB' }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700, color: '#111827', letterSpacing: '-0.03em', marginBottom: 8, lineHeight: 1.2 }}>
+          Security Overview
+        </h1>
+        <p style={{ fontSize: 16, color: '#6B7280', lineHeight: 1.6, maxWidth: 560 }}>
+          Real-time view of all threats across MCD Delhi's digital infrastructure — fake sites, internal breaches, and confirmed attack chains.
+        </p>
       </div>
 
-      {/* ── MAIN 3-COL GRID ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 240px', gap: 14, marginBottom: 14 }}>
-
-        {/* Radar */}
-        <Panel title="◉ Zone Radar · 12 Zones" accent="var(--teal-bright)">
-          <RadarMap events={unresolvedEvents} />
-          <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {[
-              { label: 'Clear', color: '#4d7a93' },
-              { label: 'Watch', color: '#60a5fa' },
-              { label: 'Alert', color: '#fb923c' },
-              { label: 'Critical', color: '#f43f5e' },
-            ].map(l => (
-              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: l.color }} />
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        {/* Trend Chart */}
-        <Panel
-          title="◆ Threat & Anomaly Trend — Last 24 Hours"
-          accent="var(--critical)"
-          action={
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-              Updates every 30s
-            </span>
-          }
-        >
-          <div style={{ height: 200 }}>
-            <ThreatTrendChart data={trendData} />
-          </div>
-          <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--bg-raised)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-            💡 Red line = fake websites detected. Teal line = unusual login attempts on real MCD systems.
-          </div>
-        </Panel>
-
-        {/* Live Feed */}
-        <Panel
-          title="⬡ Live Event Feed"
-          accent="var(--teal-bright)"
-          action={<StatusDot color="var(--success)" pulse size={7} />}
-        >
-          <LiveFeed maxHeight={230} />
-        </Panel>
-      </div>
-
-      {/* ── BOTTOM 3-COL GRID ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px 1fr', gap: 14, marginBottom: 14 }}>
-
-        {/* Recent threats */}
-        <Panel
-          title="⚠ Recent Threats — Click to Investigate"
-          accent="var(--critical)"
-          action={<Button variant="ghost" size="sm" onClick={() => setActiveModule('kavach')}>View All →</Button>}
-        >
-          {unresolvedEvents.slice(0, 4).map(e => (
-            <div key={e.id} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 0', borderBottom: '1px solid var(--border-dim)',
-            }}>
-              <div style={{
-                width: 4, borderRadius: 2, alignSelf: 'stretch',
-                background: e.severity === 'CRITICAL' ? 'var(--critical)' : e.severity === 'HIGH' ? 'var(--high)' : 'var(--medium)',
-              }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>{e.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{e.zone} Zone · {e.timestamp}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>{e.detail}</div>
-              </div>
-              <SeverityBadge severity={e.severity} small />
-            </div>
-          ))}
-          {unresolvedEvents.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 24, color: 'var(--success)', fontSize: 13 }}>
-              ✓ No active threats
-            </div>
-          )}
-        </Panel>
-
-        {/* Severity donut */}
-        <Panel title="◎ By Severity" accent="var(--text-muted)">
-          <div style={{ height: 160 }}>
-            <SeverityDonut events={unresolvedEvents} />
-          </div>
-        </Panel>
-
-        {/* Bridge correlations */}
-        <Panel
-          title="⬢ Latest Attack Correlations"
-          accent="var(--mauve-bright)"
-          action={<Button variant="ghost" size="sm" onClick={() => setActiveModule('bridge')}>View All →</Button>}
-        >
-          {correlations.slice(0, 3).map(c => (
-            <div key={c.id} style={{
-              padding: '10px', marginBottom: 8,
-              background: 'var(--bg-raised)',
-              borderRadius: 8,
-              border: `1px solid ${c.confirmed ? 'var(--critical-border)' : 'var(--high-border)'}`,
-            }}>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-                <span style={{
-                  fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                  background: c.confirmed ? 'var(--critical-bg)' : 'var(--high-bg)',
-                  color: c.confirmed ? 'var(--critical)' : 'var(--high)',
-                  fontFamily: 'var(--font-mono)', fontWeight: 700,
-                }}>
-                  {c.confirmed ? 'CONFIRMED' : 'INVESTIGATING'}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--mauve-mid)', fontFamily: 'var(--font-mono)' }}>
-                  {c.confidence}% match
-                </span>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                {c.story.slice(0, 100)}...
-              </div>
-            </div>
-          ))}
-        </Panel>
-      </div>
-
-      {/* ── QUICK STATS ROW ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
+      {/* KPI ROW */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 48, paddingBottom: 40, borderBottom: '1px solid #E5E7EB' }}>
         {[
-          { label: 'Domains Monitored', value: '18,447', color: 'var(--medium)', tooltip: TOOLTIPS.certstream },
-          { label: 'Computers Protected', value: '2,400', color: 'var(--teal-bright)', tooltip: 'All computers across 12 MCD zones monitored in real-time.' },
-          { label: 'IT Staff Covered', value: '40', color: 'var(--text-secondary)', tooltip: 'MCD IT staff who receive automated alerts.' },
-          { label: 'Zones Protected', value: '12', color: 'var(--teal-bright)', tooltip: '12 geographic zones of Delhi covered by KAVACH.' },
-          { label: 'Avg Detection', value: '< 4 min', color: 'var(--high)', tooltip: 'Average time from threat emergence to SENTINEL alert.' },
-        ].map(s => (
-          <div key={s.label} data-aos="fade-up" className="card" style={{
-            padding: '14px 16px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color, fontFamily: 'var(--font-display)', marginBottom: 4 }}>
+          { label: 'Active Threats',      value: kpis.activeThreats,                          color: '#DC2626', sub: `${kpis.criticalCount} need immediate action`, tip: 'Total unresolved security threats detected right now.' },
+          { label: 'Live Phishing Sites', value: kpis.livePhishingSites,                      color: '#D97706', sub: 'Fake MCD sites currently online',              tip: TOOLTIPS.certstream },
+          { label: 'Login Anomalies',     value: kpis.loginAnomalies,                         color: '#1D4ED8', sub: 'Unusual logins in the last 60 minutes',         tip: TOOLTIPS.zscore },
+          { label: 'Confirmed Attacks',   value: correlations.filter(c => c.confirmed).length, color: '#7C3AED', sub: 'Fully traced attack chains',                   tip: TOOLTIPS.bridgeConfidence },
+        ].map((s, i) => (
+          <div key={s.label} data-aos="fade-up" data-aos-delay={i * 60}
+            style={{ padding: '0 32px 0 0', borderRight: i < 3 ? '1px solid #E5E7EB' : 'none' }}>
+            <div style={{ fontSize: 48, fontWeight: 800, color: s.color, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 10, animation: 'countUp 0.5s ease both' }}>
               {s.value}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</span>
-              <HelpIcon tooltip={s.tooltip} />
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {s.label} <HelpIcon tooltip={s.tip} />
             </div>
+            <div style={{ fontSize: 13, color: '#6B7280' }}>{s.sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* TREND CHART + LIVE FEED */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 40, marginBottom: 48, paddingBottom: 40, borderBottom: '1px solid #E5E7EB' }}>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 4 }}>Threat & Anomaly Trend</h2>
+              <p style={{ fontSize: 13, color: '#6B7280' }}>Last 24 hours · Updates every 30 seconds</p>
+            </div>
+          </div>
+          <div style={{ height: 220 }}><ThreatTrendChart data={trendData} /></div>
+          <div style={{ marginTop: 14, padding: '12px 14px', background: '#F9FAFB', borderRadius: 8, fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+            💡 <strong style={{ color: '#374151' }}>Red line</strong> = fake websites detected. <strong style={{ color: '#374151' }}>Blue line</strong> = unusual login attempts on real MCD systems.
+          </div>
+        </div>
+
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>Live Events</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#16A34A' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }} />
+              LIVE
+            </div>
+          </div>
+          <LiveFeed maxHeight={260} />
+        </div>
+      </div>
+
+      {/* RECENT THREATS + DONUT + CORRELATIONS */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px 1fr', gap: 40, marginBottom: 48, paddingBottom: 40, borderBottom: '1px solid #E5E7EB' }}>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>Recent Threats</h2>
+            <button onClick={() => setActiveModule('kavach')} style={{ fontSize: 13, fontWeight: 500, color: '#6384BE', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View all →</button>
+          </div>
+          {unresolved.length === 0
+            ? <div style={{ padding: '28px 0', color: '#16A34A', fontSize: 14, fontWeight: 600 }}>✓ All clear — no active threats</div>
+            : unresolved.slice(0, 4).map(e => (
+              <div key={e.id} style={{ display: 'flex', gap: 12, padding: '14px 0', borderBottom: '1px solid #F3F4F6', alignItems: 'flex-start' }}>
+                <div style={{ width: 3, borderRadius: 2, alignSelf: 'stretch', flexShrink: 0, background: e.severity === 'CRITICAL' ? '#DC2626' : e.severity === 'HIGH' ? '#D97706' : '#6384BE' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{e.label}</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>{e.zone} Zone · {e.timestamp}</div>
+                  <div style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}>{e.detail}</div>
+                </div>
+                <SeverityBadge severity={e.severity} small />
+              </div>
+            ))
+          }
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 18 }}>By Severity</h2>
+          <div style={{ height: 190 }}><SeverityDonut events={unresolved} /></div>
+        </div>
+
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>Attack Correlations</h2>
+            <button onClick={() => setActiveModule('bridge')} style={{ fontSize: 13, fontWeight: 500, color: '#6384BE', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View all →</button>
+          </div>
+          {correlations.slice(0, 3).map(c => (
+            <div key={c.id} style={{ padding: '14px 0', borderBottom: '1px solid #F3F4F6' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 7, alignItems: 'center' }}>
+                <span style={{ fontSize: 11, padding: '2px 9px', borderRadius: 20, background: c.confirmed ? '#FEF2F2' : '#FFFBEB', color: c.confirmed ? '#DC2626' : '#D97706', fontWeight: 700, border: `1px solid ${c.confirmed ? '#FECACA' : '#FDE68A'}` }}>
+                  {c.confirmed ? '✓ Confirmed' : '⟳ Investigating'}
+                </span>
+                <span style={{ fontSize: 12, color: '#9CA3AF', marginLeft: 'auto' }}>{c.confidence}% match</span>
+              </div>
+              <div style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>{c.story.slice(0, 100)}...</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* STATS ROW */}
+      <div>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 24 }}>System Coverage</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
+          {[
+            { label: 'Domains Monitored',   value: '18,447',  color: '#6384BE', tip: TOOLTIPS.certstream },
+            { label: 'Computers Protected', value: '2,400',   color: '#16A34A', tip: 'All MCD computers monitored in real-time.' },
+            { label: 'IT Staff Covered',    value: '40',      color: '#374151', tip: 'IT staff who receive automated alerts.' },
+            { label: 'Zones Protected',     value: '12 / 12', color: '#16A34A', tip: '12 geographic zones of Delhi — all online.' },
+            { label: 'Avg Detection Time',  value: '< 4 min', color: '#D97706', tip: 'Average time from threat appearance to alert.' },
+          ].map((s, i) => (
+            <div key={s.label} data-aos="fade-up" data-aos-delay={i * 50}
+              style={{ padding: '0 24px', borderRight: i < 4 ? '1px solid #E5E7EB' : 'none', textAlign: 'center' }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: s.color, letterSpacing: '-0.03em', marginBottom: 6 }}>{s.value}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontSize: 12, color: '#6B7280' }}>
+                {s.label} <HelpIcon tooltip={s.tip} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

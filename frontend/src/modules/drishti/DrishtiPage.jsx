@@ -1,187 +1,143 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import { useStore } from '../../store';
-import { Panel, SeverityBadge, SeverityBar, Button, ModuleHeader, HelpIcon, StatusDot } from '../../components/ui';
+import { SeverityBadge, SeverityBar, Button, HelpIcon } from '../../components/ui';
 import { TOOLTIPS } from '../../utils/constants';
 
 export default function DrishtiPage() {
   const { domains, requestTakedown } = useStore();
   const [filter, setFilter] = useState('ALL');
-
   const filtered = filter === 'ALL' ? domains : domains.filter(d => d.status === filter);
 
   const handleTakedown = (domain) => {
     Swal.fire({
       title: 'Request Site Removal?',
-      html: `
-        <p style="color:#8fb8cc;font-size:14px;margin-bottom:12px">
-          This will send a formal takedown request to <strong style="color:#e8f4f8">CERT-In</strong> (India's national cyber authority) to remove:
-        </p>
-        <div style="background:#0d2035;border:1px solid #234567;border-radius:8px;padding:12px;color:#f43f5e;font-family:'IBM Plex Mono',monospace;font-size:13px">
-          ${domain.domain}
-        </div>
-        <p style="color:#4d7a93;font-size:12px;margin-top:12px">40 IT staff members will be notified automatically.</p>
-      `,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Request Removal',
-      cancelButtonText: 'Cancel',
-      background: '#081625',
-      color: '#e8f4f8',
-      confirmButtonColor: '#f43f5e',
-      cancelButtonColor: '#234567',
-      borderRadius: '12px',
-    }).then(result => {
-      if (result.isConfirmed) {
+      html: `<p style="color:#6B7280;font-size:14px;margin-bottom:12px">This will send a formal request to <strong style="color:#0B1E40">CERT-In</strong> (India's national cyber authority) to shut down:</p><div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px;color:#DC2626;font-family:monospace;font-size:13px">${domain.domain}</div><p style="color:#9CA3AF;font-size:12px;margin-top:12px">40 IT staff members will be notified automatically.</p>`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Yes, Request Removal', cancelButtonText: 'Cancel',
+      background: '#FFFFFF', color: '#111827',
+      confirmButtonColor: '#DC2626', cancelButtonColor: '#F3F4F6',
+    }).then(r => {
+      if (r.isConfirmed) {
         requestTakedown(domain.id);
-        Swal.fire({
-          title: 'Takedown Requested',
-          html: `<p style="color:#8fb8cc;font-size:14px">CERT-In has been notified. The site will typically go offline within 24–48 hours.</p>`,
-          icon: 'success',
-          background: '#081625',
-          color: '#e8f4f8',
-          confirmButtonColor: '#38d9d9',
-          confirmButtonText: 'OK',
-        });
+        Swal.fire({ title: 'Takedown Requested', text: 'CERT-In has been notified. The site typically goes offline within 24–48 hours.', icon: 'success', background: '#FFFFFF', confirmButtonColor: '#6384BE' });
       }
     });
   };
 
-  const statusColors = { LIVE: 'var(--critical)', TAKEDOWN: 'var(--success)', WATCH: 'var(--high)' };
-  const statusBgs = { LIVE: 'var(--critical-bg)', TAKEDOWN: 'var(--success-bg)', WATCH: 'var(--high-bg)' };
-  const statusLabels = {
-    LIVE: 'Live — Actively stealing data',
-    TAKEDOWN: 'Takedown requested — Being removed',
-    WATCH: 'Under watch — Monitoring',
+  const STATUS_STYLE = {
+    LIVE:     { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA', label: 'Live — Stealing data now' },
+    TAKEDOWN: { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0', label: 'Takedown requested' },
+    WATCH:    { bg: '#FFFBEB', color: '#D97706', border: '#FDE68A', label: 'Under monitoring' },
   };
 
   return (
-    <div style={{ animation: 'fadeInUp 0.4s ease both' }}>
-      <ModuleHeader icon="◈" name="DRISHTI" subtitle="External threat detection — monitoring the internet for fake MCD websites" color="var(--medium)">
-        <Button variant="ghost" size="sm" icon="↻">Refresh</Button>
-      </ModuleHeader>
+    <div>
+      {/* PAGE HEADER */}
+      <div style={{ marginBottom: 40, paddingBottom: 32, borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: '#111827', letterSpacing: '-0.03em', marginBottom: 8 }}>DRISHTI</h1>
+          <p style={{ fontSize: 16, color: '#6B7280', lineHeight: 1.6, maxWidth: 560 }}>
+            External threat detection — monitors the internet 24/7 for fake MCD websites, phishing messages, and impersonation attempts the moment they appear.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm">↻ Refresh</Button>
+      </div>
 
-      {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+      {/* HOW IT WORKS */}
+      <div style={{ padding: '16px 20px', background: '#F9FAFB', borderRadius: 10, borderLeft: '3px solid #E5E7EB', marginBottom: 36, fontSize: 14, color: '#6B7280', lineHeight: 1.7 }}>
+        💡 <strong style={{ color: '#374151' }}>How DRISHTI works:</strong> Every time a new website certificate is created anywhere in the world, DRISHTI checks if it looks like an MCD website. If it does, it screenshots the page, analyses the content, and alerts the team — all in under 4 minutes.
+      </div>
+
+      {/* STATS ROW */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 40, paddingBottom: 32, borderBottom: '1px solid #E5E7EB' }}>
         {[
-          { label: 'CertStream', value: 'LIVE', color: 'var(--success)', icon: '◉', sub: 'Monitoring new certificates' },
-          { label: 'Domains Tracked', value: '18,447', color: 'var(--medium)', icon: '◈', sub: 'Across all TLDs' },
-          { label: 'Detected Today', value: domains.length, color: 'var(--critical)', icon: '⚠', sub: 'New phishing sites' },
-          { label: 'Takedowns Sent', value: domains.filter(d => d.status === 'TAKEDOWN').length, color: 'var(--high)', icon: '✓', sub: 'Removal requests filed' },
-        ].map(s => (
-          <div key={s.label} data-aos="fade-up" className="card" style={{ padding: '16px 18px', borderTop: `2px solid ${s.color}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)' }}>{s.label}</span>
-              <span style={{ fontSize: 18, opacity: 0.4, color: s.color }}>{s.icon}</span>
-            </div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: s.color, fontFamily: 'var(--font-display)', margin: '6px 0 4px' }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{s.sub}</div>
+          { label: 'CertStream Status', value: 'LIVE',     color: '#16A34A', sub: 'Monitoring all new certificates' },
+          { label: 'Domains Tracked',   value: '18,447',   color: '#6384BE', sub: 'Globally, across all TLDs' },
+          { label: 'Detected Today',    value: domains.length, color: '#DC2626', sub: 'New phishing sites found' },
+          { label: 'Takedowns Filed',   value: domains.filter(d => d.status === 'TAKEDOWN').length, color: '#D97706', sub: 'Removal requests sent to CERT-In' },
+        ].map((s, i) => (
+          <div key={s.label} data-aos="fade-up" style={{ padding: '0 32px 0 0', borderRight: i < 3 ? '1px solid #E5E7EB' : 'none' }}>
+            <div style={{ fontSize: 40, fontWeight: 800, color: s.color, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontSize: 12, color: '#9CA3AF' }}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Domain table */}
-      <Panel
-        title="◈ Detected Phishing Domains"
-        accent="var(--critical)"
-        style={{ marginBottom: 20 }}
-        action={
+      {/* DOMAIN TABLE */}
+      <div style={{ marginBottom: 40 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 4 }}>Detected Phishing Domains</h2>
+            <p style={{ fontSize: 13, color: '#6B7280' }}>Fake websites impersonating MCD Delhi — sorted by how dangerous they are</p>
+          </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {['ALL', 'LIVE', 'WATCH', 'TAKEDOWN'].map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{
-                padding: '3px 10px', borderRadius: 5, border: '1px solid',
-                borderColor: filter === f ? 'var(--teal-bright)' : 'var(--border-dim)',
-                background: filter === f ? 'var(--teal-glow)' : 'transparent',
-                color: filter === f ? 'var(--teal-bright)' : 'var(--text-muted)',
-                fontSize: 10, cursor: 'pointer', fontFamily: 'var(--font-mono)',
-                letterSpacing: '0.08em',
-              }}>{f}</button>
+              <button key={f} onClick={() => setFilter(f)} style={{ padding: '4px 14px', borderRadius: 20, border: '1px solid', borderColor: filter === f ? '#6384BE' : '#E5E7EB', background: filter === f ? '#EFF4FF' : 'transparent', color: filter === f ? '#4a6fa5' : '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                {f}
+              </button>
             ))}
           </div>
-        }
-      >
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-dim)' }}>
-                {['ID', 'Domain', 'Similarity Score', 'Type', 'Detected', 'Status', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.14em', fontFamily: 'var(--font-mono)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((d, i) => (
-                <tr key={d.id} style={{ borderBottom: '1px solid rgba(30,53,80,0.4)', transition: 'background 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-raised)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <td style={{ padding: '12px 12px', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{d.id}</td>
-                  <td style={{ padding: '12px 12px' }}>
-                    <div style={{ fontSize: 13, color: 'var(--critical)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{d.domain}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>IP: {d.ip} · {d.country}</div>
-                  </td>
-                  <td style={{ padding: '12px 12px', minWidth: 160 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <SeverityBar value={d.similarity} severity={d.severity} />
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', minWidth: 36 }}>
-                        {d.similarity}%
-                        <HelpIcon tooltip={TOOLTIPS.similarity} />
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>{d.type}</td>
-                  <td style={{ padding: '12px 12px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{d.age}</td>
-                  <td style={{ padding: '12px 12px' }}>
-                    <div>
-                      <span style={{
-                        fontSize: 10, padding: '3px 8px', borderRadius: 5,
-                        background: statusBgs[d.status], color: statusColors[d.status],
-                        fontWeight: 700, fontFamily: 'var(--font-mono)',
-                        display: 'inline-block',
-                      }}>{d.status}</span>
-                      <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 3, maxWidth: 130 }}>{statusLabels[d.status]}</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px 12px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {d.status !== 'TAKEDOWN' && (
-                        <Button variant="danger" size="sm" onClick={() => handleTakedown(d)}>Remove</Button>
-                      )}
-                      <Button variant="ghost" size="sm">Report</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      </Panel>
 
-      {/* Detection methods */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.14em', fontFamily: 'var(--font-mono)', marginBottom: 12 }}>
-          HOW DRISHTI DETECTS FAKE SITES
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        <table className="data-table">
+          <thead>
+            <tr>{['ID', 'Domain', 'Similarity to Real Site', 'Type', 'Detected', 'Status', 'Action'].map(h => <th key={h}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {filtered.map(d => (
+              <tr key={d.id}>
+                <td style={{ color: '#9CA3AF', fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>{d.id}</td>
+                <td>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#DC2626', fontFamily: 'IBM Plex Mono, monospace' }}>{d.domain}</div>
+                  <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{d.ip} · {d.country}</div>
+                </td>
+                <td style={{ minWidth: 180 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1 }}><SeverityBar value={d.similarity} severity={d.severity} /></div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', minWidth: 34, fontFamily: 'IBM Plex Mono, monospace' }}>{d.similarity}%</span>
+                    <HelpIcon tooltip={TOOLTIPS.similarity} />
+                  </div>
+                </td>
+                <td style={{ color: '#374151' }}>{d.type}</td>
+                <td style={{ color: '#9CA3AF', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, whiteSpace: 'nowrap' }}>{d.age}</td>
+                <td>
+                  <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: STATUS_STYLE[d.status]?.bg, color: STATUS_STYLE[d.status]?.color, border: `1px solid ${STATUS_STYLE[d.status]?.border}`, fontWeight: 600, display: 'inline-block' }}>{d.status}</span>
+                  <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{STATUS_STYLE[d.status]?.label}</div>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {d.status !== 'TAKEDOWN' && <Button variant="danger" size="sm" onClick={() => handleTakedown(d)}>Remove</Button>}
+                    <Button variant="ghost" size="sm">Report</Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* DETECTION METHODS */}
+      <div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', marginBottom: 6 }}>How Detection Works</h2>
+        <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 28 }}>Four techniques working simultaneously to catch every type of fake site</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
           {[
-            { name: 'Name Comparison', icon: '◈', color: 'var(--medium)', rate: '847 checks/min', desc: 'Compares every new website name to "mcd.delhi.gov.in". If it\'s 80%+ similar, it\'s flagged immediately.', tooltip: TOOLTIPS.levenshtein },
-            { name: 'Visual Matching', icon: '◉', color: 'var(--high)', rate: '312 scans/min', desc: 'Takes screenshots of suspected fake sites and compares them visually to the real MCD website.', tooltip: null },
-            { name: 'Message Analysis', icon: '◆', color: 'var(--mauve-bright)', rate: '1,204 msgs/min', desc: 'Scans SMS and WhatsApp messages for phishing content pretending to be MCD.', tooltip: null },
-            { name: 'Form Detection', icon: '⬡', color: 'var(--teal-bright)', rate: 'Real-time', desc: 'Automatically detects if a fake site has an Aadhaar or payment form to steal citizen data.', tooltip: null },
-          ].map(m => (
-            <div key={m.name} data-aos="fade-up" className="card" style={{ padding: '18px', borderTop: `2px solid ${m.color}` }}>
-              <div style={{ fontSize: 28, color: m.color, marginBottom: 10, opacity: 0.7 }}>{m.icon}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <div style={{ fontSize: 14, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--text-primary)' }}>{m.name}</div>
-                {m.tooltip && <HelpIcon tooltip={m.tooltip} />}
+            { name: 'Name Comparison',  icon: '🔤', color: '#6384BE', rate: '847 checks/min', desc: 'Compares every new website name to "mcd.delhi.gov.in". 80%+ similarity = instant flag.', tip: TOOLTIPS.levenshtein },
+            { name: 'Visual Matching',  icon: '📸', color: '#D97706', rate: '312 scans/min',  desc: 'Screenshots suspected fake sites and compares them to the real MCD portal.' },
+            { name: 'Message Scanning', icon: '💬', color: '#7C3AED', rate: '1,204 msgs/min', desc: 'Scans SMS and WhatsApp messages for phishing content pretending to be MCD.' },
+            { name: 'Form Detection',   icon: '📋', color: '#16A34A', rate: 'Real-time',       desc: 'Detects Aadhaar and payment forms on fake sites — proof of data theft intent.' },
+          ].map((m, i) => (
+            <div key={m.name} data-aos="fade-up" data-aos-delay={i * 60}
+              style={{ padding: `24px ${i < 3 ? '28px' : '0'} 24px ${i > 0 ? '28px' : '0'}`, borderRight: i < 3 ? '1px solid #E5E7EB' : 'none' }}>
+              <span style={{ fontSize: 28, display: 'block', marginBottom: 14 }}>{m.icon}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{m.name}</div>
+                {m.tip && <HelpIcon tooltip={m.tip} />}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.6 }}>{m.desc}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <StatusDot color={m.color} pulse size={6} />
-                <span style={{ fontSize: 11, color: m.color, fontFamily: 'var(--font-mono)' }}>{m.rate}</span>
-              </div>
+              <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12, lineHeight: 1.6 }}>{m.desc}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: m.color }}>{m.rate}</div>
             </div>
           ))}
         </div>

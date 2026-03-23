@@ -59,7 +59,7 @@ export default function Sidebar() {
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 8px' }}>
         {sidebarOpen && (
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.16em', fontFamily: 'var(--font-display)', fontWeight: 600, padding: '10px 8px 6px' }}>MODULES</div>
+          <div style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: '0.16em', fontFamily: 'var(--font-display)', fontWeight: 600, padding: '10px 8px 6px' }}>MODULES</div>
         )}
         {NAV_ITEMS.map(item => {
           const active = activeModule === item.id;
@@ -71,7 +71,7 @@ export default function Sidebar() {
                 justifyContent: sidebarOpen ? 'flex-start' : 'center',
                 padding: sidebarOpen ? '10px 10px' : '12px 0',
                 borderRadius: 10, border: 'none',
-                background: active ? 'rgba(193, 212, 243, 0.97)' : 'transparent',
+                background: active ? 'rgba(99,132,190,0.15)' : 'transparent',
                 cursor: 'pointer', transition: 'all 0.15s ease', marginBottom: 2,
                 position: 'relative',
               }}
@@ -85,7 +85,7 @@ export default function Sidebar() {
               {sidebarOpen && (
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-display)', color: active ? 'var(--accent-primary)' : 'var(--text-secondary)', letterSpacing: '0.03em' }}>{item.label}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1, fontFamily: 'var(--font-body)' }}>{item.sub}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1, fontFamily: 'var(--font-body)' }}>{item.sub}</div>
                 </div>
               )}
             </button>
@@ -98,7 +98,7 @@ export default function Sidebar() {
         {sidebarOpen && (
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-display)', fontWeight: 500 }}>v2.0.1</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>MCD Delhi</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--font-body)' }}>MCD Delhi</div>
           </div>
         )}
         <button onClick={() => useStore.getState().toggleSidebar()} style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-dim)', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

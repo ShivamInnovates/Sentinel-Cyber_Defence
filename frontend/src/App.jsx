@@ -1,42 +1,58 @@
 import { useEffect } from 'react';
 import AOS from 'aos';
 import { useStore } from './store';
-import Sidebar from './components/layout/Sidebar';
-import Topbar from './components/layout/Topbar';
-import OverviewPage from './modules/overview/OverviewPage';
-import DrishtiPage from './modules/drishti/DrishtiPage';
-import KavachPage from './modules/kavach/KavachPage';
-import BridgePage from './modules/bridge/BridgePage';
-import SimulationPage from './modules/simulation/SimulationPage';
+import Navbar from './components/layout/Navbar';
+
+import OverviewPage        from './modules/overview/OverviewPage.jsx';
+import DrishtiPage         from './modules/drishti/DrishtiPage.jsx';
+import FakeSiteDetection   from './modules/drishti/FakeSiteDetection.jsx';
+import PhishingMonitor     from './modules/drishti/PhishingMonitor.jsx';
+import SiteTakedowns       from './modules/drishti/SiteTakedowns.jsx';
+import KavachPage          from './modules/kavach/KavachPage.jsx';
+import LoginAnomalies      from './modules/kavach/LoginAnomalies.jsx';
+import ZoneWatch           from './modules/kavach/ZoneWatch.jsx';
+import DetectionRules      from './modules/kavach/DetectionRules.jsx';
+import BridgePage          from './modules/bridge/BridgePage.jsx';
+import AttackChains        from './modules/bridge/AttackChains.jsx';
+import CanaryCredentials   from './modules/bridge/CanaryCredentials.jsx';
+import SimulationPage      from './modules/simulation/SimulationPage.jsx';
+
 import './styles/globals.css';
+
+const PAGES = {
+  overview:           <OverviewPage />,
+  drishti:            <DrishtiPage />,
+  'fake-sites':       <FakeSiteDetection />,
+  'phishing-monitor': <PhishingMonitor />,
+  'site-takedowns':   <SiteTakedowns />,
+  kavach:             <KavachPage />,
+  'login-anomalies':  <LoginAnomalies />,
+  'zone-watch':       <ZoneWatch />,
+  'detection-rules':  <DetectionRules />,
+  bridge:             <BridgePage />,
+  'attack-chains':    <AttackChains />,
+  'canary-creds':     <CanaryCredentials />,
+  simulation:         <SimulationPage />,
+};
 
 export default function App() {
   const { activeModule } = useStore();
 
   useEffect(() => {
-    AOS.init({ duration: 500, easing: 'ease-out-cubic', once: true, offset: 20 });
+    AOS.init({ duration: 400, easing: 'ease-out-cubic', once: true, offset: 12 });
   }, []);
 
   useEffect(() => { setTimeout(() => AOS.refresh(), 50); }, [activeModule]);
 
-  const pages = {
-    overview:   <OverviewPage />,
-    drishti:    <DrishtiPage />,
-    kavach:     <KavachPage />,
-    bridge:     <BridgePage />,
-    simulation: <SimulationPage />,
-  };
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-deep)' }}>
-      <div className="scanline-overlay" />
-      <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-        <Topbar />
-        <main className="grid-bg" style={{ flex: 1, overflowY: 'auto', padding: '24px' }} key={activeModule}>
-          {pages[activeModule] || <OverviewPage />}
-        </main>
-      </div>
+    <div style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+      <Navbar />
+      <main
+        style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 32px 80px' }}
+        key={activeModule}
+      >
+        {PAGES[activeModule] || <OverviewPage />}
+      </main>
     </div>
   );
 }
