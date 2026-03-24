@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AOS from 'aos';
 import { useStore } from './store';
 import Navbar from './components/layout/Navbar';
+import CyberBackground from './components/shared/CyberBackground';
 
 import LandingPage        from './modules/landing/LandingPage.jsx';
 import OverviewPage       from './modules/overview/OverviewPage.jsx';
@@ -57,8 +58,9 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <CyberBackground />
       <Navbar collapsed={navCollapsed} onToggle={() => setNavCollapsed(v => !v)} />
-      <div className={`app-main${navCollapsed ? ' nav-collapsed' : ''}`}>
+      <div className={`app-main${navCollapsed ? ' nav-collapsed' : ''}`} style={{ position: 'relative', zIndex: 1 }}>
         {isLanding
           ? <div key={activeModule}>{PAGES[activeModule]}</div>
           : (

@@ -78,9 +78,9 @@ export default function SimulationPage() {
                   <span style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{step.ts}</span>
                   <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: SEV_COLORS[step.severity] + '15', color: SEV_COLORS[step.severity], border: `1px solid ${SEV_COLORS[step.severity]}30`, fontWeight: 700 }}>{step.severity}</span>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, fontFamily: 'var(--font-mono)', marginBottom: 10 }}>{step.msg}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, fontFamily: 'var(--font-mono)', marginBottom: 10 }}>{step.msg}</div>
                 <div style={{ padding: '9px 12px', borderRadius: 6, background: 'var(--bg-raised)', border: '1px solid var(--border-dim)' }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Plain English: </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Plain English: </span>
                   <span style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.6 }}>{step.plain}</span>
                 </div>
               </div>
@@ -101,11 +101,11 @@ export default function SimulationPage() {
             const done = simLog.length > i;
             const active = simActive && simLog.length === i + 1;
             return (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 12, opacity: done ? 1 : active ? 0.8 : 0.2, transition: 'opacity 0.5s' }}>
+              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 12, opacity: done ? 1 : active ? 0.9 : 0.55, transition: 'opacity 0.5s' }}>
                 <div style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0, border: `1.5px solid ${ACTOR_COLORS[step.actor]}`, background: done ? ACTOR_COLORS[step.actor] : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: done ? '#0f0f0f' : 'transparent', fontWeight: 800, marginTop: 1, animation: active ? 'pulse-dot 1s ease infinite' : 'none' }}>✓</div>
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: ACTOR_COLORS[step.actor], letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 1 }}>{step.actor}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>{step.plain.slice(0, 50)}…</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{step.plain.slice(0, 50)}…</div>
                 </div>
               </div>
             );

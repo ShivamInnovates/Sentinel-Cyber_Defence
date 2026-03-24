@@ -41,6 +41,12 @@ body {
   transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
 
+.card:hover {
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
 .card-interactive {
   cursor: pointer;
 }
