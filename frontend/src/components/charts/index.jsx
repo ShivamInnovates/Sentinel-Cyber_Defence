@@ -38,13 +38,11 @@ export function SeverityDonut({ events }) {
   const total = Object.values(c).reduce((a,b)=>a+b,0);
   return (
     <div style={{ position:'relative', height:'100%' }}>
-      <Doughnut data={{ labels:['Critical','High','Medium','Low'], datasets:[{ data:[c.CRITICAL,c.HIGH,c.MEDIUM,c.LOW], backgroundColor:['#DC2626','#D97706','#6384BE','#9CA3AF'], borderColor:'#FFFFFF', borderWidth:3, hoverOffset:3 }] }}
+      <Doughnut data={{ labels:['Critical','High','Medium','Low'], datasets:[{ data:[c.CRITICAL,c.HIGH,c.MEDIUM,c.LOW], backgroundColor:['#DC2626','#D97706','#6384BE','#9CA3AF'], borderColor:'transparent', borderWidth:0, hoverOffset:3 }] }}
       options={{ responsive:true, maintainAspectRatio:false, cutout:'68%',
-        plugins:{ legend:{ position:'right', labels:{ color:'#6B7280', font:{family:'Inter',size:11}, boxWidth:8, boxHeight:8, borderRadius:4, useBorderRadius:true, padding:10 } }, tooltip:TT },
+        plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{family:'Inter',size:11}, boxWidth:8, boxHeight:8, borderRadius:4, useBorderRadius:true, padding:10 } }, tooltip:TT },
       }}/>
       <div style={{ position:'absolute', top:'50%', left:'30%', transform:'translate(-50%,-50%)', textAlign:'center' }}>
-        <div style={{ fontSize:26, fontWeight:800, color:'var(--text-primary)', letterSpacing:'-0.02em' }}>{total}</div>
-        <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase' }}>Active</div>
       </div>
     </div>
   );

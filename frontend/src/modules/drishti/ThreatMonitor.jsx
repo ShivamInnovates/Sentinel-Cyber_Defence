@@ -148,8 +148,13 @@ function PhishingTab() {
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border-dim)'}
           />
+<<<<<<< HEAD
           <button onClick={analyzeManual} disabled={loading} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#0f0f0f', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
             {loading ? 'Analyzing…' : 'Analyze'}
+=======
+          <button onClick={analyzeManual} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            Analyze
+>>>>>>> e338343057573b469b9d0682195b14e497d6d7a7
           </button>
         </div>
         {manualResult && (

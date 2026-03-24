@@ -43,7 +43,7 @@ export default function SupportPage() {
       </div>
 
       {/* How it works */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginBottom: 40 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 40 }}>
         {SECTIONS.map(s => (
           <div key={s.title} className="card" style={{ padding: 20 }}>
             <div style={{ width: 3, height: 20, background: s.color, borderRadius: 2, marginBottom: 12 }} />
@@ -54,7 +54,7 @@ export default function SupportPage() {
       </div>
 
       {/* Feedback form */}
-      <div className="card" style={{ padding: 28, maxWidth: 560 }}>
+      <div className="card" style={{ padding: 28 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Send Feedback</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Report a bug or share a suggestion.</div>
 
@@ -95,7 +95,7 @@ export default function SupportPage() {
             padding: '9px 20px', borderRadius: 8,
             background: sent ? 'var(--success-bg)' : 'var(--accent)',
             border: sent ? '1px solid var(--success-border)' : 'none',
-            color: sent ? 'var(--success)' : '#0f0f0f',
+            color: sent ? 'var(--success)' : '#fff',
             fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
           }}>
             {sent ? '✓ Sent' : 'Submit'}
