@@ -1,5 +1,5 @@
-# step1_references.py — capture reference screenshots of real MCD portals
-# FIX: corrected PIL import, variable name `img`, Redis key spacing, added fallback
+# references.py — capture reference screenshots of real MCD portals
+# Enterprise-grade with configurable Redis connection
 
 import asyncio
 import os
@@ -7,11 +7,21 @@ import sys
 
 import redis
 import imagehash
-from PIL import Image                          # FIX: was `PIL from Image`
+from PIL import Image
 from playwright.async_api import async_playwright
-from config import REAL_PORTAL_URLS
+from config import REAL_PORTAL_URLS, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB
 
-r = redis.Redis(host="localhost", port=6379, decode_responses=True)  # FIX: was decode_response
+# Initialize Redis with environment-based configuration
+redis_kwargs = {
+    "host": REDIS_HOST,
+    "port": REDIS_PORT,
+    "db": REDIS_DB,
+    "decode_responses": True
+}
+if REDIS_PASSWORD:
+    redis_kwargs["password"] = REDIS_PASSWORD
+
+r = redis.Redis(**redis_kwargs)
 
 os.makedirs("reference_screenshots", exist_ok=True)
 

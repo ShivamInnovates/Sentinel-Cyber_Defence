@@ -1,0 +1,126 @@
+# ========================================================================================
+# TRINETRA Cyber Defense - Docker Compose Orchestration
+# ========================================================================================
+# Complete multi-container application setup with proper networking and persistence
+
+version: '3.9'
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────────────
+  # Redis - Caching & Session Storage
+  # ─────────────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: trinetra-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis-password}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - trinetra-network
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis-password}
+
+  # ─────────────────────────────────────────────────────────────────────────────────
+  # FastAPI Backend
+  # ─────────────────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trinetra-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # API Configuration
+      TRINETRA_API_KEY: ${TRINETRA_API_KEY:-TRINETRA-demo-key}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-false}
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis-password}
+      
+      # Application Settings
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      
+      # Model Thresholds
+      LEVENSHTEIN_THRESHOLD: ${LEVENSHTEIN_THRESHOLD:-65}
+      KEYWORD_MIN_COUNT: ${KEYWORD_MIN_COUNT:-2}
+      COMPOSITE_CONFIRMED: ${COMPOSITE_CONFIRMED:-75}
+      COMPOSITE_PROBABLE: ${COMPOSITE_PROBABLE:-50}
+      ZSCORE_RED: ${ZSCORE_RED:-3.0}
+      ZSCORE_YELLOW: ${ZSCORE_YELLOW:-2.5}
+      ADMIN_OFFHOURS_START: ${ADMIN_OFFHOURS_START:-22}
+      ADMIN_OFFHOURS_END: ${ADMIN_OFFHOURS_END:-6}
+      BRIDGE_AUTO_HOURS: ${BRIDGE_AUTO_HOURS:-4}
+      BRIDGE_REVIEW_DAYS: ${BRIDGE_REVIEW_DAYS:-7}
+      BASE_LOGIN_PER_HOUR: ${BASE_LOGIN_PER_HOUR:-48}
+      
+      # Data Paths
+      DATA_DIR: ${DATA_DIR:-/app/data}
+      REFERENCE_SCREENSHOTS_DIR: ${REFERENCE_SCREENSHOTS_DIR:-/app/reference_screenshots}
+      SCREENSHOTS_DIR: ${SCREENSHOTS_DIR:-/app/screenshots}
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/reference_screenshots:/app/reference_screenshots
+      - ./backend/screenshots:/app/screenshots
+      - ./backend/logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - trinetra-network
+    restart: unless-stopped
+    command: >
+      sh -c "python -m uvicorn app:app
+      --host 0.0.0.0
+      --port 8000
+      --reload"
+
+  # ─────────────────────────────────────────────────────────────────────────────────
+  # React Frontend (Vite + Nginx)
+  # ─────────────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trinetra-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      # API Configuration
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-30000}
+      
+      # Nginx Backend Configuration
+      BACKEND_HOST: ${BACKEND_HOST:-backend}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+    depends_on:
+      - backend
+    networks:
+      - trinetra-network
+    restart: unless-stopped
+
+# ────────────────────────────────────────────────────────────────────────────────────
+# Networks
+# ────────────────────────────────────────────────────────────────────────────────────
+networks:
+  trinetra-network:
+    driver: bridge
+
+# ────────────────────────────────────────────────────────────────────────────────────
+# Volumes
+# ────────────────────────────────────────────────────────────────────────────────────
+volumes:
+  redis-data:
+    driver: local

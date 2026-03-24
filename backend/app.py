@@ -1,6 +1,6 @@
-# server.py — TRINETRA FastAPI backend
-# Run: uvicorn server:app --reload --port 8000
-# FIX: config is a separate file, all imports are absolute
+# app.py — TRINETRA FastAPI backend
+# Enterprise-grade deployment with environment-based configuration
+# Run: uvicorn app:app --reload --port 8000
 
 import os
 import sys
@@ -16,7 +16,10 @@ from pydantic import BaseModel
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from config import FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE
+from config import (
+    FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE,
+    ALLOWED_ORIGINS, DEBUG, ENVIRONMENT, LOG_LEVEL
+)
 from Models.models import (
     score_domain, run_bridge, fit_model,
     classify_report, check_velocity, process_event,
@@ -27,34 +30,84 @@ from Models.demo import run_automated_demo, get_sim_log, get_sim_state
 from notifications import notify_alert, notify_correlation, notify_canary_trigger
 from chat_history import ChatHistory
 
-app = FastAPI(title="TRINETRA Cyber Defense API", version="1.0.0")
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# APPLICATION INITIALIZATION
+# ═══════════════════════════════════════════════════════════════════════════════════════
+
+app = FastAPI(
+    title="TRINETRA Cyber Defense API",
+    version="1.0.0",
+    debug=DEBUG
+)
+
+# ─────────────────────────────────────────────────────────────────────────────────────
+# CORS Configuration - from environment variable
+# ─────────────────────────────────────────────────────────────────────────────────────
+
+origins = ALLOWED_ORIGINS if isinstance(ALLOWED_ORIGINS, list) else [ALLOWED_ORIGINS]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Simple API key auth for protected endpoints
+# ─────────────────────────────────────────────────────────────────────────────────────
+# API Key Authentication
+# ─────────────────────────────────────────────────────────────────────────────────────
+
 API_KEY_NAME = "X-API-KEY"
 API_KEY = os.environ.get("TRINETRA_API_KEY", "TRINETRA-demo-key")
 
 
 def verify_api_key(api_key: str = Header(None, alias=API_KEY_NAME)):
+    """Verify API key from request headers."""
     if api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return True
 
-# Pre-fit TF-IDF on startup
-fit_model()
+# ─────────────────────────────────────────────────────────────────────────────────────
+# Health Check Endpoint
+# ─────────────────────────────────────────────────────────────────────────────────────
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for container orchestration."""
+    return {
+        "status": "healthy",
+        "environment": ENVIRONMENT,
+        "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+# ─────────────────────────────────────────────────────────────────────────────────────
+# Startup Event - Initialize models and services
+# ─────────────────────────────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize critical services on application startup."""
+    print(f"[{datetime.utcnow().isoformat()}] Starting TRINETRA Backend")
+    print(f"  Environment: {ENVIRONMENT}")
+    print(f"  Debug Mode: {DEBUG}")
+    print(f"  Log Level: {LOG_LEVEL}")
+    
+    # Pre-fit TF-IDF model
+    try:
+        fit_model()
+        print("  ✓ TF-IDF Model loaded")
+    except Exception as e:
+        print(f"  ⚠ Failed to load TF-IDF Model: {e}")
 
 # Initialize chat history
 chat_history = ChatHistory()
 
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# PYDANTIC MODELS
+# ═══════════════════════════════════════════════════════════════════════════════════════
 
-# --- Pydantic models ---
 class QueryRequest(BaseModel):
     query: str
 
@@ -64,6 +117,9 @@ class AlertRequest(BaseModel):
 class CrossRealityRequest(BaseModel):
     cross_alert: dict
 
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════════════
 
 # --- CHAT ENDPOINT ---
 @app.post("/api/chat")
