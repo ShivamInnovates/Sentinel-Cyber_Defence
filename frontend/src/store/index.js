@@ -18,15 +18,24 @@ export const useStore = create((set) => ({
   zoneActivity: getMockZoneActivity(),
   liveFeed:     [],
 
-  activeModule: 'overview',
-  sidebarOpen:  true,
+  // 'landing' | 'overview' | 'drishti' | 'fake-sites' | 'phishing-monitor'
+  // | 'kavach' | 'login-anomalies' | 'zone-watch' | 'detection-rules'
+  // | 'bridge' | 'attack-chains' | 'canary-creds'
+  // | 'analytics' | 'simulation' | 'support'
+  activeModule: 'landing',
+  darkMode: true,
 
   simActive: false,
   simLog:    [],
   simStep:   0,
 
   setActiveModule: (module) => set({ activeModule: module }),
-  toggleSidebar:   () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+
+  toggleDark: () => set((s) => {
+    const next = !s.darkMode;
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+    return { darkMode: next };
+  }),
 
   resolvEvent: (id) => set((s) => ({
     events: s.events.map(e => e.id === id ? { ...e, resolved: true } : e),

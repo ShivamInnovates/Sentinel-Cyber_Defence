@@ -1,223 +1,327 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store';
+import logoDark from '../../assets/trinetra-logo-dark.svg';
+import logoLight from '../../assets/trinetra-logo-light.svg';
 
-const Icon = ({ d, size = 16, color = 'currentColor' }) => (
+const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
 
 const ICONS = {
-  globe:  'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10zM2 12h20',
-  mail:   'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6',
-  ban:    'M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636',
-  lock:   'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 10 0v4',
-  map:    'M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z M9 4v13 M15 7v13',
-  list:   'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
-  link:   'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
-  bird:   'M22 3l-8.97 5.7a2 2 0 0 1-2.06 0L2 3 M2 3l10 13L22 3',
-  play:   'M5 3l14 9-14 9V3z',
-  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
-  alert:  'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
+  grid:    'M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z',
+  eye:     'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  lock:    'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 10 0v4',
+  link:    'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+  bar:     'M18 20V10 M12 20V4 M6 20v-6',
+  play:    'M5 3l14 9-14 9V3z',
+  help:    'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01',
+  sun:     'M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42 M12 5a7 7 0 1 0 0 14A7 7 0 0 0 12 5z',
+  moon:   'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
+  chevron: 'M9 18l6-6-6-6',
+  alert:   'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
+  menu:    'M3 12h18 M3 6h18 M3 18h18',
+  close:   'M18 6L6 18 M6 6l12 12',
 };
 
-const MEGA_MENUS = {
-  drishti: {
-    label: 'DRISHTI',
-    color: '#6384BE',
-    sections: [{
-      title: 'External Threat Detection',
-      items: [
-        { iconKey: 'globe', label: 'Fake Site Detection', sub: 'Every fake MCD website found online',        page: 'fake-sites'       },
-        { iconKey: 'mail',  label: 'Phishing Monitor',    sub: 'SMS & WhatsApp impersonation messages',     page: 'phishing-monitor' },
-        { iconKey: 'ban',   label: 'Site Takedowns',      sub: 'Removal requests sent to CERT-In',          page: 'site-takedowns'   },
-      ],
-    }],
+const NAV = [
+  { id: 'overview',   icon: 'grid',  label: 'Dashboard',         sub: 'Overview' },
+  {
+    id: 'drishti', icon: 'eye', label: 'Drishti', sub: 'External Threats',
+    children: [
+      { id: 'threat-monitor', label: 'Threat Monitor' },
+    ],
   },
-  kavach: {
-    label: 'KAVACH',
-    color: '#16A34A',
-    sections: [{
-      title: 'Internal Network Defense',
-      items: [
-        { iconKey: 'lock', label: 'Login Anomalies',  sub: 'Unusual login patterns across 2,400 computers', page: 'login-anomalies' },
-        { iconKey: 'map',  label: '12-Zone Watch',    sub: 'Real-time status of all Delhi MCD zones',       page: 'zone-watch'      },
-        { iconKey: 'list', label: 'Detection Rules',  sub: 'Rules that trigger alerts — and why',           page: 'detection-rules' },
-      ],
-    }],
+  {
+    id: 'kavach', icon: 'lock', label: 'Kavach', sub: 'Network Defense',
+    children: [
+      { id: 'login-anomalies', label: 'Login Anomalies' },
+      { id: 'zone-watch',      label: '12 Zone Watch' },
+    ],
   },
-  bridge: {
-    label: 'Bridge Correlation',
-    color: '#7C3AED',
-    sections: [{
-      title: 'Attack Correlation Engine',
-      items: [
-        { iconKey: 'link', label: 'Attack Chains',      sub: 'Fake site linked to internal breach',        page: 'attack-chains' },
-        { iconKey: 'bird', label: 'Canary Credentials', sub: 'Forensic proof of credential theft',         page: 'canary-creds'  },
-        { iconKey: 'play', label: 'Attack Simulation',  sub: 'Watch a full attack unfold step by step',    page: 'simulation'    },
-      ],
-    }],
+  {
+    id: 'bridge', icon: 'link', label: 'Bridge Correlation', sub: 'Attack Chains',
+    children: [
+      { id: 'attack-chains', label: 'Attack Chains' },
+      { id: 'canary-creds',  label: 'Canary Credentials' },
+    ],
   },
+  { id: 'analytics',  icon: 'bar',  label: 'Analytics',         sub: 'Logs' },
+  { id: 'simulation', icon: 'play', label: 'Attack Simulation', sub: 'Live Playback' },
+  { id: 'support',    icon: 'help', label: 'Support',           sub: 'Help & Feedback' },
+];
+
+const PARENT_IDS = {
+  'threat-monitor': 'drishti',
+  'login-anomalies': 'kavach', 'zone-watch': 'kavach',
+  'attack-chains': 'bridge', 'canary-creds': 'bridge',
 };
 
-const MENU_PAGES = {
-  drishti: ['drishti', 'fake-sites', 'phishing-monitor', 'site-takedowns'],
-  kavach:  ['kavach', 'login-anomalies', 'zone-watch', 'detection-rules'],
-  bridge:  ['bridge', 'attack-chains', 'canary-creds', 'simulation'],
-};
-
-function MegaMenu({ menu, onNavigate, onClose }) {
-  return (
-    <div style={{
-      position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
-      transform: 'translateX(-50%)',
-      background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 14,
-      boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
-      padding: '16px 16px 12px', minWidth: 300, zIndex: 1000,
-      animation: 'slideDown 0.16s ease both',
-    }}>
-      <div style={{
-        position: 'absolute', top: -6, left: '50%',
-        transform: 'translateX(-50%) rotate(45deg)',
-        width: 11, height: 11, background: '#FFFFFF',
-        border: '1px solid #E5E7EB', borderBottom: 'none', borderRight: 'none',
-      }} />
-      {menu.sections.map(section => (
-        <div key={section.title}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8, paddingLeft: 8 }}>
-            {section.title}
-          </div>
-          {section.items.map((item, i) => (
-            <button key={i}
-              onClick={() => { onNavigate(item.page); onClose(); }}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s', marginBottom: 2 }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: menu.color + '12', border: `1px solid ${menu.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon d={ICONS[item.iconKey]} size={15} color={menu.color} />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 1 }}>{item.label}</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF' }}>{item.sub}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Clock() {
-  const [time, setTime] = useState(new Date());
-  useEffect(() => { const id = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(id); }, []);
-  const fmt = n => String(n).padStart(2, '0');
-  return (
-    <div style={{ textAlign: 'right' }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', fontFamily: 'IBM Plex Mono, monospace' }}>
-        {fmt(time.getHours())}:{fmt(time.getMinutes())}:{fmt(time.getSeconds())}
-      </div>
-      <div style={{ fontSize: 10, color: '#9CA3AF' }}>
-        {time.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} IST
-      </div>
-    </div>
-  );
-}
-
-export default function Navbar() {
-  const { setActiveModule, activeModule, kpis } = useStore();
-  const [openMenu, setOpenMenu] = useState(null);
-  const navRef = useRef(null);
+export default function Navbar({ collapsed, onToggle }) {
+  const { activeModule, setActiveModule, darkMode, toggleDark, kpis } = useStore();
+  const [expanded, setExpanded] = useState(() => {
+    const parent = PARENT_IDS[activeModule];
+    return parent ? { [parent]: true } : {};
+  });
 
   useEffect(() => {
-    const handler = e => { if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+    const parent = PARENT_IDS[activeModule];
+    if (parent) setExpanded(e => ({ ...e, [parent]: true }));
+  }, [activeModule]);
+
+  // Close sub-menus when collapsing
+  useEffect(() => {
+    if (collapsed) setExpanded({});
+  }, [collapsed]);
+
+  const navigate = (id) => setActiveModule(id);
+
+  const toggleExpand = (id) => {
+    if (collapsed) {
+      onToggle(); // expand sidebar first, then open submenu
+      setExpanded({ [id]: true });
+    } else {
+      setExpanded(e => ({ ...e, [id]: !e[id] }));
+    }
+  };
+
+  const isActive = (item) => {
+    if (item.id === activeModule) return true;
+    if (item.children) return item.children.some(c => c.id === activeModule);
+    return false;
+  };
 
   return (
-    <>
-      {kpis.criticalCount > 0 && (
-        <div style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '7px 40px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Icon d={ICONS.alert} size={14} color="#DC2626" />
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>Critical Alert:</span>
-          <span style={{ fontSize: 13, color: '#991B1B' }}>
-            {kpis.criticalCount} critical threat{kpis.criticalCount > 1 ? 's' : ''} require immediate attention.
-          </span>
-          <button onClick={() => { setActiveModule('login-anomalies'); setOpenMenu(null); }}
-            style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#DC2626', background: 'none', border: '1px solid #FECACA', borderRadius: 6, padding: '3px 12px', cursor: 'pointer' }}>
-            View Threats →
+    <aside className={`app-sidebar${collapsed ? ' collapsed' : ''}`}>
+      {/* Logo + toggle */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        borderBottom: '1px solid var(--border-dim)',
+        flexShrink: 0, overflow: 'hidden',
+        minHeight: 60,
+      }}>
+        {collapsed ? (
+          /* When collapsed: clicking the logo icon expands the sidebar */
+          <button
+            onClick={onToggle}
+            title="Expand sidebar"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '100%', padding: '14px 0',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
+            <img
+              src={darkMode ? logoDark : logoLight}
+              alt="TRINETRA"
+              style={{ width: 30, height: 30, objectFit: 'contain' }}
+            />
           </button>
+        ) : (
+          <>
+            <button
+              onClick={() => navigate('landing')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '14px 12px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                flex: 1, textAlign: 'left', overflow: 'hidden',
+              }}
+            >
+              <img
+                src={darkMode ? logoDark : logoLight}
+                alt="TRINETRA"
+                style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }}
+              />
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.06em', lineHeight: 1.2, whiteSpace: 'nowrap' }}>TRINETRA</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.05em', marginTop: 1, whiteSpace: 'nowrap' }}>Cyber Intelligence System</div>
+              </div>
+            </button>
+
+            {/* Collapse button */}
+            <button
+              onClick={onToggle}
+              title="Collapse sidebar"
+              style={{
+                flexShrink: 0, width: 28, height: 28, margin: '0 8px 0 0',
+                borderRadius: 6, background: 'transparent', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--text-dim)', transition: 'color 0.15s, background 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-light)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Icon d={ICONS.close} size={13} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Critical alert strip */}
+      {kpis.criticalCount > 0 && !collapsed && (
+        <div style={{
+          margin: '10px 10px 0',
+          padding: '8px 12px',
+          borderRadius: 8,
+          background: 'var(--critical-bg)',
+          border: '1px solid var(--critical-border)',
+          display: 'flex', alignItems: 'center', gap: 7,
+          fontSize: 11, color: 'var(--critical)', fontWeight: 600,
+          whiteSpace: 'nowrap', overflow: 'hidden',
+        }}>
+          <Icon d={ICONS.alert} size={12} />
+          {kpis.criticalCount} critical threat{kpis.criticalCount > 1 ? 's' : ''}
         </div>
       )}
 
-      <nav ref={navRef} style={{ height: 58, background: '#FFFFFF', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', padding: '0 40px', position: 'sticky', top: 0, zIndex: 500 }}>
-
-        <button onClick={() => { setActiveModule('overview'); setOpenMenu(null); }}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', marginRight: 28, padding: 0, flexShrink: 0 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #0B1E40, #6384BE)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon d={ICONS.shield} size={14} color="#FFFFFF" />
+      {/* Nav items */}
+      <nav style={{ flex: 1, padding: collapsed ? '10px 4px' : '10px 8px', overflowY: 'auto', overflowX: 'hidden' }}>
+        {!collapsed && (
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '6px 10px 8px', whiteSpace: 'nowrap' }}>
+            Navigation
           </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#0B1E40', letterSpacing: '-0.01em', lineHeight: 1.2 }}>SENTINEL</div>
-            <div style={{ fontSize: 9, color: '#9CA3AF', fontWeight: 500, letterSpacing: '0.05em' }}>MCD CYBER DEFENSE</div>
-          </div>
-        </button>
+        )}
 
-        <div style={{ width: 1, height: 24, background: '#E5E7EB', marginRight: 20, flexShrink: 0 }} />
+        {NAV.map(item => {
+          const active = isActive(item);
+          const isExpanded = expanded[item.id];
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          <button onClick={() => { setActiveModule('overview'); setOpenMenu(null); }}
-            style={{ padding: '5px 13px', borderRadius: 7, border: 'none', background: activeModule === 'overview' ? '#F3F4F6' : 'transparent', color: activeModule === 'overview' ? '#111827' : '#6B7280', fontSize: 14, fontWeight: activeModule === 'overview' ? 600 : 500, cursor: 'pointer', transition: 'all 0.15s' }}
-            onMouseEnter={e => { if (activeModule !== 'overview') { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#374151'; } }}
-            onMouseLeave={e => { if (activeModule !== 'overview') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; } }}>
-            Dashboard
-          </button>
+          return (
+            <div key={item.id} style={{ marginBottom: 1 }}>
+              <button
+                onClick={() => item.children ? toggleExpand(item.id) : navigate(item.id)}
+                title={collapsed ? item.label : undefined}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  gap: collapsed ? 0 : 9,
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  padding: collapsed ? '10px 0' : '8px 10px',
+                  borderRadius: 8, border: 'none',
+                  background: active && !item.children ? 'var(--accent-light)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                  cursor: 'pointer', transition: 'all 0.14s', textAlign: 'left',
+                  boxShadow: active && !item.children ? 'inset 0 0 0 1px rgba(59,130,246,0.25)' : 'none',
+                  position: 'relative',
+                }}
+                onMouseEnter={e => {
+                  if (!active || item.children)
+                    e.currentTarget.style.background = 'var(--bg-raised)';
+                }}
+                onMouseLeave={e => {
+                  if (!active || item.children)
+                    e.currentTarget.style.background =
+                      active && !item.children ? 'var(--accent-light)' : 'transparent';
+                }}
+              >
+                {/* Active indicator bar */}
+                {!collapsed && (
+                  <span style={{
+                    position: 'absolute', left: 8,
+                    width: 3, height: 20, borderRadius: 2,
+                    background: active && !item.children ? 'var(--accent)' : 'transparent',
+                    transition: 'background 0.14s',
+                  }} />
+                )}
 
-          {Object.entries(MEGA_MENUS).map(([key, menu]) => {
-            const isActive = MENU_PAGES[key]?.includes(activeModule);
-            const isOpen   = openMenu === key;
-            return (
-              <div key={key} style={{ position: 'relative' }}>
-                <button onClick={() => setOpenMenu(isOpen ? null : key)}
-                  style={{ padding: '5px 13px', borderRadius: 7, border: 'none', background: isActive || isOpen ? '#F3F4F6' : 'transparent', color: isActive || isOpen ? '#111827' : '#6B7280', fontSize: 14, fontWeight: isActive ? 600 : 500, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6 }}
-                  onMouseEnter={e => { if (!isActive && !isOpen) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#374151'; } }}
-                  onMouseLeave={e => { if (!isActive && !isOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B7280'; } }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: menu.color, display: 'inline-block' }} />
-                  {menu.label}
-                  <span style={{ fontSize: 9, color: '#9CA3AF', display: 'inline-block', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▾</span>
-                </button>
-                {isOpen && <MegaMenu menu={menu} onNavigate={setActiveModule} onClose={() => setOpenMenu(null)} />}
-              </div>
-            );
-          })}
-        </div>
+                <span style={{
+                  color: active ? 'var(--accent)' : 'var(--text-muted)',
+                  flexShrink: 0,
+                  marginLeft: collapsed ? 0 : 6,
+                }}>
+                  <Icon d={ICONS[item.icon]} size={15} />
+                </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
-          {[
-            { label: 'THREATS',  value: kpis.activeThreats,     color: '#DC2626' },
-            { label: 'PHISHING', value: kpis.livePhishingSites, color: '#D97706' },
-            { label: 'ZONES',    value: '12/12',                 color: '#16A34A' },
-          ].map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.06em', marginTop: 2 }}>{s.label}</div>
+                {!collapsed && (
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>{item.sub}</div>
+                  </div>
+                )}
+
+                {item.children && !collapsed && (
+                  <span style={{
+                    color: 'var(--text-dim)',
+                    transform: isExpanded ? 'rotate(90deg)' : 'none',
+                    transition: 'transform 0.15s',
+                    flexShrink: 0,
+                  }}>
+                    <Icon d={ICONS.chevron} size={12} />
+                  </span>
+                )}
+              </button>
+
+              {/* Sub-items — only shown when expanded and not collapsed */}
+              {item.children && isExpanded && !collapsed && (
+                <div style={{
+                  marginLeft: 28, marginTop: 2, marginBottom: 4,
+                  borderLeft: '1px solid var(--border-dim)',
+                  paddingLeft: 10,
+                }}>
+                  {item.children.map(child => {
+                    const childActive = activeModule === child.id;
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => navigate(child.id)}
+                        style={{
+                          width: '100%', display: 'block',
+                          padding: '6px 10px', borderRadius: 6,
+                          border: 'none', textAlign: 'left',
+                          background: childActive ? 'var(--accent-light)' : 'transparent',
+                          color: childActive ? 'var(--accent)' : 'var(--text-muted)',
+                          fontSize: 12, fontWeight: childActive ? 600 : 400,
+                          cursor: 'pointer', transition: 'all 0.12s', marginBottom: 1,
+                          boxShadow: childActive ? 'inset 0 0 0 1px rgba(59,130,246,0.2)' : 'none',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseEnter={e => { if (!childActive) e.currentTarget.style.background = 'var(--bg-raised)'; }}
+                        onMouseLeave={e => { if (!childActive) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        {child.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ))}
-          <div style={{ width: 1, height: 20, background: '#E5E7EB' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ position: 'relative', width: 8, height: 8, display: 'inline-flex' }}>
-              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#16A34A', animation: 'ping 1.4s ease-out infinite', opacity: 0.5 }} />
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A', display: 'block' }} />
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#16A34A' }}>Live</span>
-          </div>
-          <div style={{ width: 1, height: 20, background: '#E5E7EB' }} />
-          <Clock />
-        </div>
+          );
+        })}
       </nav>
-    </>
+
+      {/* Footer: theme toggle + version */}
+      <div style={{
+        padding: collapsed ? '12px 0' : '12px 12px',
+        borderTop: '1px solid var(--border-dim)',
+        display: 'flex', alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'space-between',
+        flexShrink: 0,
+      }}>
+        {!collapsed && <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>v2.0 · MCD Delhi</span>}
+        <button
+          onClick={toggleDark}
+          title={darkMode ? 'Light mode' : 'Dark mode'}
+          style={{
+            width: 30, height: 30, borderRadius: 7,
+            background: 'var(--bg-raised)',
+            border: '1px solid var(--border-dim)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-muted)', transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-dim)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+        >
+          <Icon d={darkMode ? ICONS.sun : ICONS.moon} size={13} />
+        </button>
+      </div>
+    </aside>
   );
 }

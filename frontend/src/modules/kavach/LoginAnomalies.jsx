@@ -1,6 +1,4 @@
 import { useStore } from '../../store';
-import { SeverityBadge, HelpIcon } from '../../components/ui';
-import { TOOLTIPS } from '../../utils/constants';
 
 const RECENT = [
   { time: '08:42:17', zone: 'Central',     count: 47, zscore: '4.1', status: 'CRITICAL' },
@@ -10,64 +8,52 @@ const RECENT = [
   { time: '07:10:55', zone: 'Civil Lines', count: 5,  zscore: '1.6', status: 'LOW'      },
 ];
 
-const SEV   = { CRITICAL: '#DC2626', HIGH: '#D97706', MEDIUM: '#6384BE', LOW: '#9CA3AF' };
-const SEVBG = { CRITICAL: '#FEF2F2', HIGH: '#FFFBEB', MEDIUM: '#EFF4FF', LOW: '#F9FAFB' };
+const SEV_COLOR = { CRITICAL: '#ef4444', HIGH: '#f59e0b', MEDIUM: '#6384BE', LOW: '#6b7280' };
 
 export default function LoginAnomalies() {
   const { events } = useStore();
-  const critCount = events.filter(e =>
-    e.label.toLowerCase().includes('login') &&
-    e.severity === 'CRITICAL' &&
-    !e.resolved
-  ).length;
+  const critCount = events.filter(e => e.label.toLowerCase().includes('login') && e.severity === 'CRITICAL' && !e.resolved).length;
 
   return (
     <div>
-      <div style={{ marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #E5E7EB' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', letterSpacing: '-0.02em', marginBottom: 6 }}>
-          Login Anomaly Detection
-        </h1>
-        <p style={{ fontSize: 15, color: '#6B7280' }}>
-          Unusual login patterns across 2,400 MCD computers — flagged in real-time.
-        </p>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 6 }}>Login Anomaly Detection</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Unusual login patterns across 2,400 MCD computers — flagged in real-time using Z-score analysis.</p>
       </div>
 
-      <div style={{ padding: '14px 18px', background: '#F9FAFB', borderRadius: 10, borderLeft: '3px solid #E5E7EB', marginBottom: 28, fontSize: 13, color: '#6B7280', lineHeight: 1.7 }}>
-        A login anomaly is triggered when failed attempts are far above normal. The Z-score measures how unusual the activity is — anything above 3.0 is flagged immediately.{' '}
-        <HelpIcon tooltip={TOOLTIPS.zscore} />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #E5E7EB' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>
         {[
-          { label: 'Anomalies Today',  value: '247',     color: '#1D4ED8' },
-          { label: 'Critical Spikes', value: critCount,  color: '#DC2626' },
-          { label: 'Zones Affected',  value: '4',        color: '#D97706' },
-        ].map((s, i) => (
-          <div key={s.label} style={{ padding: '0 32px 0 0', borderRight: i < 2 ? '1px solid #E5E7EB' : 'none' }}>
-            <div style={{ fontSize: 32, fontWeight: 800, color: s.color, letterSpacing: '-0.03em', marginBottom: 6 }}>{s.value}</div>
-            <div style={{ fontSize: 13, color: '#6B7280' }}>{s.label}</div>
+          { label: 'Anomalies Today',  value: '247',      color: '#6384BE' },
+          { label: 'Critical Spikes',  value: critCount,  color: '#ef4444' },
+          { label: 'Zones Affected',   value: '4',        color: '#f59e0b' },
+        ].map(s => (
+          <div key={s.label} className="card" style={{ padding: '18px 20px' }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: s.color, letterSpacing: '-0.03em', marginBottom: 4 }}>{s.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 14 }}>Recent Login Spikes</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {RECENT.map((r, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 16px', borderRadius: 10, background: SEVBG[r.status], border: `1px solid ${SEV[r.status]}22`, borderLeft: `3px solid ${SEV[r.status]}` }}>
-            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: '#9CA3AF', minWidth: 70 }}>{r.time}</div>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{r.zone} Zone</span>
-              <span style={{ fontSize: 13, color: '#6B7280', marginLeft: 10 }}>{r.count} failed logins in 90 seconds</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 10, color: '#9CA3AF' }}>Z-score</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: SEV[r.status] }}>{r.zscore}</div>
+        {RECENT.map((r, i) => {
+          const c = SEV_COLOR[r.status];
+          return (
+            <div key={i} className="card" style={{ padding: '14px 16px', borderLeft: `3px solid ${c}`, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', minWidth: 68 }}>{r.time}</div>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.zone} Zone</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 10 }}>{r.count} failed logins in 90s</span>
               </div>
-              <SeverityBadge severity={r.status} small />
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>Z-score</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: c }}>{r.zscore}</div>
+              </div>
+              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: c + '15', color: c, border: `1px solid ${c}30`, fontWeight: 700 }}>
+                {r.status}
+              </span>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

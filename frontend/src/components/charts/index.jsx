@@ -2,9 +2,9 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 ChartJS.register(CategoryScale,LinearScale,PointElement,LineElement,BarElement,ArcElement,Tooltip,Legend,Filler);
 
-const TT = { backgroundColor:'#0B1E40', borderColor:'#1e3a6e', borderWidth:1, titleColor:'#F6F9FC', bodyColor:'#A8BEDD', padding:10, cornerRadius:8, titleFont:{family:'Inter',size:11,weight:'600'}, bodyFont:{family:'Inter',size:12} };
-const TICK = { color:'#9CA3AF', font:{family:'Inter',size:10,weight:'500'} };
-const GRID = { color:'rgba(227,234,242,0.8)', drawBorder:false };
+const TT = { backgroundColor:'#1a1a1a', borderColor:'#333', borderWidth:1, titleColor:'#ededed', bodyColor:'#a1a1a1', padding:10, cornerRadius:8, titleFont:{family:'Inter',size:11,weight:'600'}, bodyFont:{family:'Inter',size:12} };
+const TICK = { color:'#6b7280', font:{family:'Inter',size:10,weight:'500'} };
+const GRID = { color:'rgba(255,255,255,0.05)', drawBorder:false };
 
 export function ThreatTrendChart({ data }) {
   if (!data) return null;
