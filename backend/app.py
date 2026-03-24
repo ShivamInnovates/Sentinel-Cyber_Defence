@@ -1,4 +1,4 @@
-# server.py — SENTINEL FastAPI backend
+# server.py — TRINETRA FastAPI backend
 # Run: uvicorn server:app --reload --port 8000
 # FIX: config is a separate file, all imports are absolute
 
@@ -26,7 +26,7 @@ from Models.demo import run_automated_demo, get_sim_log, get_sim_state
 from notifications import notify_alert, notify_correlation, notify_canary_trigger
 from chat_history import ChatHistory
 
-app = FastAPI(title="SENTINEL Cyber Defense API", version="1.0.0")
+app = FastAPI(title="TRINETRA Cyber Defense API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,7 +38,7 @@ app.add_middleware(
 
 # Simple API key auth for protected endpoints
 API_KEY_NAME = "X-API-KEY"
-API_KEY = os.environ.get("SENTINEL_API_KEY", "sentinel-demo-key")
+API_KEY = os.environ.get("TRINETRA_API_KEY", "TRINETRA-demo-key")
 
 
 def verify_api_key(api_key: str = Header(None, alias=API_KEY_NAME)):
@@ -74,16 +74,16 @@ def chat(req: QueryRequest, api_key: bool = Depends(verify_api_key)):
         # Simple response based on query keywords
         query_lower = req.query.lower()
         if any(word in query_lower for word in ["threat", "attack", "phishing", "malware"]):
-            answer = "SENTINEL is actively monitoring for threats. Current threat level: MEDIUM with coordinated attacks detected on property_tax portals. Our AI models have identified cross-reality patterns suggesting coordinated campaigns."
+            answer = "TRINETRA is actively monitoring for threats. Current threat level: MEDIUM with coordinated attacks detected on property_tax portals. Our AI models have identified cross-reality patterns suggesting coordinated campaigns."
             sources = [{"page": "1", "source": "threat_analysis.pdf", "snippet": "Coordinated phishing campaigns targeting government portals..."}]
         elif any(word in query_lower for word in ["zone", "network", "infrastructure"]):
-            answer = "SENTINEL protects 12 zones covering critical infrastructure. Each zone has intelligent anomaly detection monitoring login patterns, domain reputation, and behavioral baselines."
+            answer = "TRINETRA protects 12 zones covering critical infrastructure. Each zone has intelligent anomaly detection monitoring login patterns, domain reputation, and behavioral baselines."
             sources = [{"page": "3", "source": "architecture.pdf", "snippet": "Multi-zone defense architecture with distributed monitoring nodes..."}]
-        elif any(word in query_lower for word in ["what", "who", "sentinel"]):
-            answer = "SENTINEL is a comprehensive cyber defense system combining three intelligence modules: Drishti (phishing detection), Kavach (anomaly detection), and Bridge (correlation analysis)."
-            sources = [{"page": "0", "source": "overview.pdf", "snippet": "SENTINEL Cyber Defense System Overview..."}]
+        elif any(word in query_lower for word in ["what", "who", "TRINETRA"]):
+            answer = "TRINETRA is a comprehensive cyber defense system combining three intelligence modules: Drishti (phishing detection), Kavach (anomaly detection), and Bridge (correlation analysis)."
+            sources = [{"page": "0", "source": "overview.pdf", "snippet": "TRINETRA Cyber Defense System Overview..."}]
         else:
-            answer = f"SENTINEL analyzing your query: '{req.query}'. System operates 24/7 with real-time threat monitoring and adaptive learning. Current status: All systems operational."
+            answer = f"TRINETRA analyzing your query: '{req.query}'. System operates 24/7 with real-time threat monitoring and adaptive learning. Current status: All systems operational."
             sources = []
 
         chat_history.add_message("assistant", answer)
@@ -143,7 +143,7 @@ def format_cross_reality_endpoint(req: CrossRealityRequest, api_key: bool = Depe
 
 @app.get("/")
 def home():
-    return {"message": "SENTINEL backend running 🚀", "timestamp": datetime.now().isoformat()}
+    return {"message": "TRINETRA backend running 🚀", "timestamp": datetime.now().isoformat()}
 
 
 @app.get("/api/health")
