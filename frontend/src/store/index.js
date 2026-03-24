@@ -10,14 +10,14 @@ const now = () => DateTime.now().setZone('Asia/Kolkata').toFormat('HH:mm:ss');
 const API_BASE = 'http://127.0.0.1:8000/api';
 
 export const useStore = create((set, get) => ({
-  domains:      [],
-  events:       [],
+  domains: [],
+  events: [],
   correlations: [],
-  kpis:         getMockKPIs(), // keep mock for static parts if needed, overwritten by fetchData
-  canaries:     [],
-  trendData:    getMockTrendData(),
+  kpis: getMockKPIs(), // keep mock for static parts if needed, overwritten by fetchData
+  canaries: [],
+  trendData: getMockTrendData(),
   zoneActivity: getMockZoneActivity(),
-  liveFeed:     [],
+  liveFeed: [],
 
   // 'landing' | 'overview' | 'drishti' | 'fake-sites' | 'phishing-monitor'
   // | 'kavach' | 'login-anomalies' | 'zone-watch' | 'detection-rules'
@@ -27,8 +27,8 @@ export const useStore = create((set, get) => ({
   darkMode: true,
 
   simActive: false,
-  simLog:    [],
-  simStep:   0,
+  simLog: [],
+  simStep: 0,
 
   fetchData: async () => {
     try {
@@ -58,12 +58,12 @@ export const useStore = create((set, get) => ({
 
   resolvEvent: (id) => set((s) => ({
     events: s.events.map(e => e.id === id ? { ...e, resolved: true } : e),
-    kpis:   { ...s.kpis, activeThreats: Math.max(0, s.kpis.activeThreats - 1) },
+    kpis: { ...s.kpis, activeThreats: Math.max(0, s.kpis.activeThreats - 1) },
   })),
 
   requestTakedown: (id) => set((s) => ({
     domains: s.domains.map(d => d.id === id ? { ...d, status: 'TAKEDOWN' } : d),
-    kpis:    { ...s.kpis, takedownsSent: s.kpis.takedownsSent + 1 },
+    kpis: { ...s.kpis, takedownsSent: s.kpis.takedownsSent + 1 },
   })),
 
   addFeedItem: (item) => set((s) => ({
@@ -73,7 +73,7 @@ export const useStore = create((set, get) => ({
   startSimulation: () => set({ simActive: true, simLog: [], simStep: 0 }),
 
   addSimStep: (step) => set((s) => ({
-    simLog:  [...s.simLog, { ...step, ts: now() }],
+    simLog: [...s.simLog, { ...step, ts: now() }],
     simStep: s.simLog.length,
   })),
 

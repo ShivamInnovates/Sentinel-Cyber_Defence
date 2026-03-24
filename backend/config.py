@@ -1,8 +1,9 @@
+# config.py — single source of truth for all constants
 
 REAL_DOMAINS = [
-    'mcdonline', 'mcdpropertytax', 'mcdwatertax', 'mcdbirthdeath', 
+    'mcdonline', 'mcdpropertytax', 'mcdwatertax', 'mcdbirthdeath',
     'mcdtradelicence', 'mcdparkingfee', 'mcdbuilding', 'mcdfactorylicence',
-    'mcdmarriageregsitration', 'mcdfoodlicence', 'mcdpetlicence', 'mcdhealthlicence',
+    'mcdmarriageregistration', 'mcdfoodlicence', 'mcdpetlicence', 'mcdhealthlicence',
     'mcdadvertisementlicence', 'mcddemolition', 'mcdnewwater', 'mcdsewerage',
     'mcdsolidwaste', 'mcdstreetvending', 'mcdhorticulture'
 ]
@@ -13,47 +14,41 @@ MCD_KEYWORDS = [
     'propertytax', 'watertax', 'mcdonline'
 ]
 
-PORTALS = [
-    'property_tax',
-    'water_tax',
-    'birth_death',
-    'trade_licence'
-]
+PORTALS = ['property_tax', 'water_tax', 'birth_death', 'trade_licence']
 
+REAL_PORTAL_URLS = {
+    "property_tax":  "https://mcdonline.nic.in/propertytax",
+    "water_tax":     "https://mcdonline.nic.in/watertax",
+    "birth_death":   "https://mcdonline.nic.in/birthdeath",
+    "trade_licence": "https://mcdonline.nic.in/tradelicence"
+}
 
-#MODEL 1 THRESHOLDS
+# Model 1
 LEVENSHTEIN_THRESHOLD = 65
-KEYWORD_MIN_COUNT = 2 
+KEYWORD_MIN_COUNT = 2
 
-#MODEL 2 THRESHOLDS
+# Model 2
 COMPOSITE_CONFIRMED = 75
-COMPOSITE_PROBABLE = 50
+COMPOSITE_PROBABLE  = 50
 
-#MODEL 4 THRESHOLDS
-ZSCORE_RED = 3.0
+# Model 4
+ZSCORE_RED    = 3.0
 ZSCORE_YELLOW = 2.5
+ADMIN_OFFHOURS_START = 22   # 10 PM
+ADMIN_OFFHOURS_END   = 6    # 6 AM
 
-#OFFHOURS LOGIN
-ADMIN_OFFHOURS_START = 22 #10PM
-ADMIN_OFFHOURS_END = 6 #6AM
+# Model 5
+BRIDGE_AUTO_HOURS  = 4
+BRIDGE_REVIEW_DAYS = 7
 
+# Baseline
+BASE_LOGIN_PER_HOUR = 48
 
-BRIDGE_AUTO_HOURS = 4 #4 HOURS FOR AUTO ALERT 
-BRIDGE_REVIEW_DAYS = 7 #7 DAYS FOR ANALYST TO REVIEW
-
-# ── Traffic baseline settings ──────────────────────────────── 
-# Monday at 10 AM = busiest, most stable, predictable time
-# # At this chosen reference time (Monday 10 AM), we expect ~48 logins per hour.
-# # Base number of logins per hour at peak time (Mon 10am) 
-# # All other time slots are calculated as a fraction of this.
-BASE_LOGIN_PER_HOUR = 48 
-
-
+# Paths
 REFERENCE_SCREENSHOTS_DIR = "reference_screenshots"
-SCREENSHOTS_DIR = "screenshots"
-DATA_DIR = "data"
-CORPUS_FILE = "data/phishing_corpus.json"
-FAKE_SITES_FILE = "data/fake_sites.json"
-KAVACH_ALERTS_FILE = "data/kavach_alerts.json"
-CANARY_FILE = "data/canaries.json"
-
+SCREENSHOTS_DIR           = "screenshots"
+DATA_DIR                  = "data"
+CORPUS_FILE               = "data/phishing_corpus.json"
+FAKE_SITES_FILE           = "data/fake_sites.json"
+KAVACH_ALERTS_FILE        = "data/kavach_alerts.json"
+CANARY_FILE               = "data/canaries.json"

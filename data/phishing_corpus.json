@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "text": "Received WhatsApp message pay property tax at mcd-propertytax-pay.in urgently",
+    "campaign_id": 1
+  },
+  {
+    "id": 2,
+    "text": "mcd-propertytax-pay.in is a scam link received in WhatsApp",
+    "campaign_id": 1
+  },
+  {
+    "id": 3,
+    "text": "Message about MCD mosquito spraying schedule link received",
+    "campaign_id": 2
+  },
+  {
+    "id": 4,
+    "text": "Report: phishing SMS for online property tax payment",
+    "campaign_id": 1
+  },
+  {
+    "id": 201,
+    "text": "Received WhatsApp message pay property tax at mcd-propertytax-pay.in urgently",
+    "campaign_id": 1
+  },
+  {
+    "id": 202,
+    "text": "Message about MCD mosquito spraying schedule link received",
+    "campaign_id": 2
+  }
+]

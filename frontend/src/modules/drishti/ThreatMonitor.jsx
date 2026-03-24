@@ -1,18 +1,18 @@
+// ThreatMonitor.jsx — Fixed: merge conflict markers removed, Analyze button hits backend
 import { useState } from 'react';
 import { useStore } from '../../store';
 import { SeverityBar } from '../../components/ui';
 
-/* ── shared styles ── */
 const STATUS_STYLE = {
-  LIVE:     { bg: 'var(--critical-bg)', color: 'var(--critical)', border: 'var(--critical-border)' },
-  TAKEDOWN: { bg: 'var(--success-bg)',  color: 'var(--success)',  border: 'var(--success-border)' },
-  WATCH:    { bg: 'var(--high-bg)',     color: 'var(--high)',     border: 'var(--high-border)' },
+  LIVE: { bg: 'var(--critical-bg)', color: 'var(--critical)', border: 'var(--critical-border)' },
+  TAKEDOWN: { bg: 'var(--success-bg)', color: 'var(--success)', border: 'var(--success-border)' },
+  WATCH: { bg: 'var(--high-bg)', color: 'var(--high)', border: 'var(--high-border)' },
 };
 
 const RISK_STYLE = {
   CRITICAL: { bg: 'var(--critical-bg)', color: 'var(--critical)', border: 'var(--critical-border)' },
-  HIGH:     { bg: 'var(--high-bg)',     color: 'var(--high)',     border: 'var(--high-border)' },
-  MEDIUM:   { bg: 'var(--medium-bg)',   color: 'var(--medium)',   border: 'var(--medium-border)' },
+  HIGH: { bg: 'var(--high-bg)', color: 'var(--high)', border: 'var(--high-border)' },
+  MEDIUM: { bg: 'var(--medium-bg)', color: 'var(--medium)', border: 'var(--medium-border)' },
 };
 
 const MESSAGES = [
@@ -22,7 +22,7 @@ const MESSAGES = [
   { id: 'PM004', channel: 'SMS', text: 'Congratulations! You qualify for an MCD subsidy of ₹4,500. Claim at mcdindia-scheme.in', risk: 'HIGH', detected: '2h ago' },
 ];
 
-/* ── tab: fake sites ── */
+/* ── Fake Sites tab ── */
 function FakeSitesTab() {
   const { domains, requestTakedown } = useStore();
   const [filter, setFilter] = useState('ALL');
@@ -31,7 +31,9 @@ function FakeSitesTab() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{filtered.length} domain{filtered.length !== 1 ? 's' : ''} found</span>
+        <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+          {filtered.length} domain{filtered.length !== 1 ? 's' : ''} found
+        </span>
         <div style={{ display: 'flex', gap: 6 }}>
           {['ALL', 'LIVE', 'WATCH', 'TAKEDOWN'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
@@ -48,53 +50,60 @@ function FakeSitesTab() {
         </div>
       </div>
 
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <table className="data-table">
-          <thead>
-            <tr>{['Domain', 'Similarity', 'Type', 'Age', 'Status', 'Action'].map(h => <th key={h}>{h}</th>)}</tr>
-          </thead>
-          <tbody>
-            {filtered.map(d => {
-              const ss = STATUS_STYLE[d.status] || STATUS_STYLE.WATCH;
-              return (
-                <tr key={d.id}>
-                  <td>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--critical)', fontFamily: 'var(--font-mono)' }}>{d.domain}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{d.ip} · {d.country}</div>
-                  </td>
-                  <td style={{ minWidth: 140 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1 }}><SeverityBar value={d.similarity} severity={d.severity} /></div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', minWidth: 30 }}>{d.similarity}%</span>
-                    </div>
-                  </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.type}</td>
-                  <td style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{d.age}</td>
-                  <td>
-                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: ss.bg, color: ss.color, border: `1px solid ${ss.border}`, fontWeight: 600 }}>
-                      {d.status}
-                    </span>
-                  </td>
-                  <td>
-                    {d.status !== 'TAKEDOWN'
-                      ? <button onClick={() => requestTakedown(d.id)} style={{ fontSize: 11, padding: '4px 12px', borderRadius: 6, border: '1px solid var(--critical-border)', background: 'var(--critical-bg)', color: 'var(--critical)', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
-                      : <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600 }}>✓ Requested</span>
-                    }
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {filtered.length === 0 ? (
+        <div className="card" style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--success)', fontWeight: 600 }}>
+          ✓ No fake sites detected yet. Run the Attack Simulation to generate live data.
+        </div>
+      ) : (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <table className="data-table">
+            <thead>
+              <tr>{['Domain', 'Similarity', 'Type', 'Age', 'Status', 'Action'].map(h => <th key={h}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {filtered.map(d => {
+                const ss = STATUS_STYLE[d.status] || STATUS_STYLE.WATCH;
+                return (
+                  <tr key={d.id}>
+                    <td>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--critical)', fontFamily: 'var(--font-mono)' }}>{d.domain}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{d.ip} · {d.country}</div>
+                    </td>
+                    <td style={{ minWidth: 140 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1 }}><SeverityBar value={d.similarity} severity={d.severity} /></div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', minWidth: 30 }}>{d.similarity}%</span>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.type}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{d.age}</td>
+                    <td>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: ss.bg, color: ss.color, border: `1px solid ${ss.border}`, fontWeight: 600 }}>
+                        {d.status}
+                      </span>
+                    </td>
+                    <td>
+                      {d.status !== 'TAKEDOWN'
+                        ? <button onClick={() => requestTakedown(d.id)} style={{ fontSize: 11, padding: '4px 12px', borderRadius: 6, border: '1px solid var(--critical-border)', background: 'var(--critical-bg)', color: 'var(--critical)', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
+                        : <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600 }}>✓ Requested</span>
+                      }
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── tab: phishing messages ── */
+/* ── Phishing Messages tab ── */
 function PhishingTab() {
   const [manualText, setManualText] = useState('');
   const [manualResult, setManualResult] = useState(null);
+  // FIX: loading state added, Analyze button hits real backend
   const [loading, setLoading] = useState(false);
 
   const analyzeManual = async () => {
@@ -110,24 +119,23 @@ function PhishingTab() {
       const data = await res.json();
       setManualResult(data);
     } catch {
-      // Fallback to local scoring if backend is offline
+      // Graceful offline fallback
       const lower = manualText.toLowerCase();
-      const sev = lower.includes('aadhaar') || lower.includes('urgent') || lower.includes('suspended') ? 'CRITICAL'
-               : lower.includes('mcd') || lower.includes('payment') ? 'HIGH' : 'MEDIUM';
+      const sev = lower.includes('aadhaar') || lower.includes('urgent') || lower.includes('suspended')
+        ? 'CRITICAL'
+        : lower.includes('mcd') || lower.includes('payment') ? 'HIGH' : 'MEDIUM';
       setManualResult({ offline: true, severity: sev });
     }
     setLoading(false);
   };
 
-
   return (
     <div>
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
-          { label: 'Scanned Today',      value: '18,240',   color: 'var(--accent)' },
-          { label: 'Phishing Detected',  value: '4',        color: 'var(--critical)' },
-          { label: 'Scan Rate',          value: '1,204/min', color: 'var(--success)' },
+          { label: 'Scanned Today', value: '18,240', color: 'var(--accent)' },
+          { label: 'Phishing Detected', value: '4', color: 'var(--critical)' },
+          { label: 'Scan Rate', value: '1,204/min', color: 'var(--success)' },
         ].map(s => (
           <div key={s.label} className="card" style={{ padding: '18px 20px' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: s.color, letterSpacing: '-0.03em', marginBottom: 4 }}>{s.value}</div>
@@ -136,45 +144,68 @@ function PhishingTab() {
         ))}
       </div>
 
-      {/* Manual check */}
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>Manual Message Check</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>
+          Manual Message Check
+          <span style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 400, marginLeft: 8 }}>(powered by Model 3 — TF-IDF)</span>
+        </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             value={manualText}
             onChange={e => { setManualText(e.target.value); setManualResult(null); }}
-            placeholder="Paste a suspicious message here..."
-            style={{ flex: 1, padding: '9px 12px', borderRadius: 8, background: 'var(--bg-raised)', border: '1px solid var(--border-dim)', color: 'var(--text-primary)', fontSize: 13, outline: 'none' }}
+            onKeyDown={e => e.key === 'Enter' && analyzeManual()}
+            placeholder="Paste a suspicious WhatsApp / SMS message here..."
+            style={{
+              flex: 1, padding: '9px 12px', borderRadius: 8,
+              background: 'var(--bg-raised)', border: '1px solid var(--border-dim)',
+              color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+            }}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border-dim)'}
           />
-<<<<<<< HEAD
-          <button onClick={analyzeManual} disabled={loading} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#0f0f0f', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
-            {loading ? 'Analyzing…' : 'Analyze'}
-=======
-          <button onClick={analyzeManual} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            Analyze
->>>>>>> e338343057573b469b9d0682195b14e497d6d7a7
+          {/* FIX: button color was #0f0f0f in one branch, #fff in another — unified to #fff */}
+          <button
+            onClick={analyzeManual}
+            disabled={loading}
+            style={{
+              padding: '9px 18px', borderRadius: 8, background: 'var(--accent)',
+              border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
+              transition: 'opacity 0.15s',
+            }}
+          >
+            {loading ? 'Analysing…' : 'Analyse'}
           </button>
         </div>
         {manualResult && (
           <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-raised)', border: '1px solid var(--border-dim)', fontSize: 13, color: 'var(--text-primary)' }}>
             {manualResult.offline ? (
-              <span style={{ color: RISK_STYLE[manualResult.severity]?.color }}>⚠ Backend offline — Local risk estimate: <strong>{manualResult.severity}</strong></span>
+              <span style={{ color: RISK_STYLE[manualResult.severity]?.color }}>
+                ⚠ Backend offline — Local risk estimate: <strong>{manualResult.severity}</strong>
+              </span>
             ) : (
               <span>
                 <strong style={{ color: manualResult.is_new ? 'var(--critical)' : 'var(--success)' }}>
-                  {manualResult.is_new ? '🆕 New campaign detected' : `📎 Joined Campaign #${manualResult.campaign_id}`}
+                  {manualResult.is_new
+                    ? '🆕 New campaign detected'
+                    : `📎 Joined Campaign #${manualResult.campaign_id}`}
                 </strong>
-                {manualResult.confidence && <span style={{ marginLeft: 10, color: 'var(--text-muted)' }}>Confidence: {manualResult.confidence}%</span>}
-                {manualResult.velocity?.alert && <span style={{ marginLeft: 10, color: 'var(--high)' }}>⚡ {manualResult.velocity.alert} ({manualResult.velocity.count} in 2hrs)</span>}
+                {manualResult.confidence &&
+                  <span style={{ marginLeft: 10, color: 'var(--text-muted)' }}>
+                    Confidence: {manualResult.confidence}%
+                  </span>
+                }
+                {manualResult.velocity?.alert &&
+                  <span style={{ marginLeft: 10, color: 'var(--high)' }}>
+                    ⚡ {manualResult.velocity.alert} ({manualResult.velocity.count} in 2hrs)
+                  </span>
+                }
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Message cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {MESSAGES.map(m => {
           const rs = RISK_STYLE[m.risk];
@@ -194,10 +225,10 @@ function PhishingTab() {
   );
 }
 
-/* ── main page ── */
+/* ── Main page ── */
 const TABS = [
   { id: 'fake-sites', label: 'Fake Site Detection', sub: 'Spoofed domains' },
-  { id: 'phishing',   label: 'Phishing Monitor',    sub: 'SMS & WhatsApp' },
+  { id: 'phishing', label: 'Phishing Monitor', sub: 'SMS & WhatsApp' },
 ];
 
 export default function ThreatMonitor() {
@@ -205,21 +236,16 @@ export default function ThreatMonitor() {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 4 }}>Threat Monitor</h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Fake websites and phishing messages impersonating MCD — detected and tracked in real time.</p>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border-dim)', paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border-dim)' }}>
         {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             style={{
-              padding: '10px 20px',
-              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer',
               borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
               marginBottom: -1,
               color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-muted)',
@@ -232,7 +258,6 @@ export default function ThreatMonitor() {
         ))}
       </div>
 
-      {/* Tab content */}
       {activeTab === 'fake-sites' ? <FakeSitesTab /> : <PhishingTab />}
     </div>
   );

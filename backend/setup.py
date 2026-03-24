@@ -48,7 +48,7 @@ ok,_,err = run(f"pip install {' '.join(libraries)} --quiet")
 if ok:
     print("All libraries installed")
 else:
-    print("Installation failed: {err}")
+    print(f"Installation failed: {err}")
     print("Try running : pip install " + " ".join(libraries))
     sys.exit(1)
 
@@ -72,7 +72,7 @@ else:
 # # - Storing active canary usernames (checked on every login attempt) 
 # # It needs to be running as a background service.
 print("\n[3/4] Checking Redis...")
-ok, out, _ = run(r"C:\Users\erica\Downloads\Redis-x64-5.0.14.1\redis-cli.exe ping")
+ok, out, _ = run(r"redis-cli ping")
 if "PONG" in out:
     print("Redis is running")
 else:

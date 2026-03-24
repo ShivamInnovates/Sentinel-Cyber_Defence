@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "text": "Got WhatsApp saying pay property tax at mcdpropertytax-pay.in urgent deadline tomorrow",
+    "campaign_id": 1
+  },
+  {
+    "id": 2,
+    "text": "SMS received property tax payment link mcd-propertytax-pay.in pay before penalty",
+    "campaign_id": 1
+  },
+  {
+    "id": 3,
+    "text": "Friend shared mcd-propertytax-pay.in said MCD property tax overdue pay now",
+    "campaign_id": 1
+  },
+  {
+    "id": 4,
+    "text": "Telegram message property tax due mcd-propertytax-pay.in pay immediately",
+    "campaign_id": 1
+  },
+  {
+    "id": 5,
+    "text": "Received WhatsApp property tax overdue visit mcd-propertytax-pay.in pay or face action",
+    "campaign_id": 1
+  },
+  {
+    "id": 6,
+    "text": "WhatsApp link mcd-water-payment.com water tax pending pay now Delhi municipal",
+    "campaign_id": 2
+  },
+  {
+    "id": 7,
+    "text": "SMS water tax overdue mcd-water-payment.com Delhi pay before disconnection notice",
+    "campaign_id": 2
+  },
+  {
+    "id": 8,
+    "text": "Message water bill payment mcd-water-payment.com urgent notice received today",
+    "campaign_id": 2
+  },
+  {
+    "id": 9,
+    "text": "Water tax demand notice link mcd-water-payment.com received on Telegram",
+    "campaign_id": 2
+  },
+  {
+    "id": 10,
+    "text": "Delhi water tax mcd-water-payment.com pay before penalty WhatsApp message",
+    "campaign_id": 2
+  }
+]

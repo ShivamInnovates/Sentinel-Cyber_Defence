@@ -32,8 +32,67 @@ from backend.config import (
     BRIDGE_AUTO_HOURS, BRIDGE_REVIEW_DAYS, CORPUS_FILE, FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE
 )
 
+try:
+    from backend.notifications import notify_canary_trigger
+except ImportError:
+    notify_canary_trigger = lambda *args: None  # Fallback if not available
+
 r=redis.Redis(host="localhost", port=6379, decode_responses=True)
 
+import sqlite3
+
+DB_FILE = "data/sentinel.db"
+
+
+def _get_db_connection():
+    os.makedirs(os.path.dirname(CORPUS_FILE), exist_ok=True)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _init_db():
+    conn = _get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS fake_sites (
+        id INTEGER PRIMARY KEY,
+        domain TEXT,
+        portal_type TEXT,
+        classification TEXT,
+        explanation TEXT,
+        canary_username TEXT,
+        detected_at TEXT
+    )
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS kavach_alerts (
+        id INTEGER PRIMARY KEY,
+        portal_type TEXT,
+        zone TEXT,
+        rule TEXT,
+        severity TEXT,
+        z_score REAL,
+        source_ips TEXT,
+        message TEXT,
+        detected_at TEXT
+    )
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS canaries (
+        username TEXT PRIMARY KEY,
+        portal_type TEXT,
+        site_id INTEGER,
+        deployed_at TEXT,
+        triggered INTEGER,
+        triggered_at TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
+
+
+_init_db()
 
 
 def score_domain(full_domain:str) -> dict:
@@ -60,7 +119,31 @@ def score_domain(full_domain:str) -> dict:
     best_match, best_score = max(scores, key = lambda x : x[1])
     lev_flag = best_score >= LEVENSHTEIN_THRESHOLD
 
-    found_keywords = [kw for kw in MCD_KEYWORDS if kw in label_raw]
+    # Simple tokenization without regex: split on common separators
+    tokens = []
+    current = ""
+    for ch in label_raw:
+        if ch.isalnum():
+            current += ch
+        else:
+            if current:
+                tokens.append(current)
+                current = ""
+    if current:
+        tokens.append(current)
+
+    found_keywords = []
+    for kw in MCD_KEYWORDS:
+        for token in tokens:
+            # exact token match or keyword matched in a token (e.g. 'propertytax' contains 'tax')
+            if kw == token or kw in token:
+                found_keywords.append(kw)
+                break
+
+    # Deduplicate while keeping order
+    seen = set()
+    found_keywords = [x for x in found_keywords if not (x in seen or seen.add(x))]
+
     kw_flag = len(found_keywords) >= KEYWORD_MIN_COUNT
 
     #Explanation in english
@@ -122,11 +205,11 @@ def analyze_site(screenshot_path:str, html:str, domain:str, portal_type:str) ->d
 
     aadhaar_inputs = soup.find_all(
         "input",
-        attrs = {"placeholder":lambda x:x and "aadhaar" in x.lower()}
+        attrs={"placeholder": lambda x: x and "aadhaar" in x.lower()}
     )
     aadhaar_labels = soup.find_all(
         "label",
-        string = lambda x:x and "aadhaar" in x.lower()
+        string=lambda x: x and "aadhaar" in x.lower()
     )
 
     if aadhaar_inputs or aadhaar_labels:
@@ -190,11 +273,27 @@ def fit_model():
     """
     global _vectorizer, _matrix, _meta
 
+    def _bootstrap_corpus():
+        bootstrap = [
+            {"id": 1, "text": "Received WhatsApp message pay property tax at mcd-propertytax-pay.in urgently", "campaign_id": 1},
+            {"id": 2, "text": "mcd-propertytax-pay.in is a scam link received in WhatsApp", "campaign_id": 1},
+            {"id": 3, "text": "Message about MCD mosquito spraying schedule link received", "campaign_id": 2},
+            {"id": 4, "text": "Report: phishing SMS for online property tax payment", "campaign_id": 1},
+        ]
+        os.makedirs(os.path.dirname(CORPUS_FILE), exist_ok=True)
+        json.dump(bootstrap, open(CORPUS_FILE, "w"), indent=2)
+        return bootstrap
+
     if not os.path.exists(CORPUS_FILE):
-        print(" No corpus file found - skipping model fit")
-        return False
-    
-    data = json.load(open(CORPUS_FILE))
+        print(" No corpus file found - creating bootstrap corpus")
+        data = _bootstrap_corpus()
+    else:
+        data = json.load(open(CORPUS_FILE))
+
+    if len(data) < 4:
+        print(f" Only {len(data)} reports in existing corpus. Replacing with bootstrap corpus")
+        data = _bootstrap_corpus()
+
     texts = [d['text'] for d in data]
     if len(texts) < 4:
         print(f" Only {len(texts)} reports - need atleast 4 to fit model")
@@ -226,7 +325,15 @@ def classify_report(text:str, report_id: int) ->dict:
     if _vectorizer is None:
         fit_model()
     if _vectorizer is None:
-        return {"campaign_id":None, "is_new":True, "confidence":None, "error": "Model not ready, not enough data"}
+        # Fallback mode for bootstrapping with small corpus
+        fallback_campaign = max((m["campaign_id"] for m in _meta), default=0) + 1
+        _add_to_corpus(text, report_id, fallback_campaign)
+        return {
+            "campaign_id": fallback_campaign,
+            "is_new": True,
+            "confidence": None,
+            "note": "Model not ready; using bootstrap clustering" 
+        }
     
     new_vec = _vectorizer.transform([text])
     sims = cosine_similarity(new_vec, _matrix)[0]
@@ -273,8 +380,9 @@ def _add_to_corpus(text:str, report_id:int, campaign_id:int):
         json.dump(data, open(CORPUS_FILE, "w"), indent=2)
  
     # Update in-memory matrix — no full refit needed for one new document
-    new_vec = _vectorizer.transform([text])
-    _matrix = vstack([_matrix, new_vec])
+    if _vectorizer is not None and _matrix is not None:
+        new_vec = _vectorizer.transform([text])
+        _matrix = vstack([_matrix, new_vec])
     _meta.append({"id": report_id, "campaign_id": campaign_id})
  
  
@@ -350,7 +458,47 @@ def _check_login_spike(portal: str, count: int, ts: datetime, source_ips: list):
     b         = r.hgetall(key)
 
     if not b:
-        return None  # No baseline yet — cannot judge
+        # No historical baseline yet. Apply thresholds so attacks are still caught early.
+        if count >= 100:
+            z = None
+            return {
+                "rule": "LOGIN_SPIKE",
+                "severity": "RED",
+                "portal": portal,
+                "z_score": None,
+                "login_count": count,
+                "expected": 0,
+                "source_ips": source_ips,
+                "message": (
+                    f"{count} login attempts on '{portal}' portal with no baseline. "
+                    "High volume indicates potential attack; initial default red threshold."
+                ),
+                "warning": "No baseline data available; using static detection fallback.",
+                "timestamp": ts.isoformat(),
+            }
+        elif count >= 60:
+            return {
+                "rule": "LOGIN_ELEVATED",
+                "severity": "YELLOW",
+                "portal": portal,
+                "z_score": None,
+                "login_count": count,
+                "expected": 0,
+                "message": (
+                    f"{count} login attempts on '{portal}' portal with no baseline. "
+                    "Elevated volume; monitor closely."
+                ),
+                "warning": "No baseline data available; using static detection fallback.",
+                "timestamp": ts.isoformat(),
+            }
+        else:
+            # Initialize baseline with first normal observation.
+            r.hset(f"baseline:{portal}:{day}:{hour}", mapping={
+                "mean": str(count),
+                "std": "1.0",
+                "days_real": "1",
+            })
+            return None
 
     mean     = float(b["mean"])
     std      = float(b["std"])
@@ -538,7 +686,7 @@ def deploy_canary(site_id: int, portal_type: str) -> str:
     ts_code  = str(int(datetime.now().timestamp()))[-4:]
     username = f"sentinel.canary.{ts_code}@mcd.gov.in"
 
-    # Store in file
+    # Store in file for compatibility
     os.makedirs("data", exist_ok=True)
     canaries = json.load(open(CANARY_FILE)) if os.path.exists(CANARY_FILE) else []
     canaries.append({
@@ -549,6 +697,16 @@ def deploy_canary(site_id: int, portal_type: str) -> str:
         "triggered":   False,
     })
     json.dump(canaries, open(CANARY_FILE, "w"), indent=2)
+
+    # Store in DB for structured persistence
+    conn = _get_db_connection()
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO canaries (username, portal_type, site_id, deployed_at, triggered, triggered_at) VALUES (?,?,?,?,?,?)",
+        (username, portal_type, site_id, datetime.now().isoformat(), 0, None)
+    )
+    conn.commit()
+    conn.close()
 
     # Store in Redis for sub-millisecond lookup on every login attempt
     r.sadd("active_canaries", username)
@@ -573,6 +731,26 @@ def check_canary(attempted_username: str) -> bool:
                 c["triggered_at"] = datetime.now().isoformat()
         json.dump(canaries, open(CANARY_FILE, "w"), indent=2)
 
+    # Mark triggered in DB
+    conn = _get_db_connection()
+    c = conn.cursor()
+    c.execute(
+        "UPDATE canaries SET triggered = 1, triggered_at = ? WHERE username = ?",
+        (datetime.now().isoformat(), attempted_username)
+    )
+    conn.commit()
+    conn.close()
+
+    # Notify about canary trigger
+    site_id = None
+    if os.path.exists(CANARY_FILE):
+        canaries = json.load(open(CANARY_FILE))
+        for c in canaries:
+            if c["username"] == attempted_username:
+                site_id = c.get("site_id")
+                break
+    notify_canary_trigger(attempted_username, site_id or 0)
+
     r.srem("active_canaries", attempted_username)
     return True
 
@@ -582,7 +760,7 @@ def record_fake_site(site_id, domain, portal_type, classification,
     """Stores a confirmed/probable fake site so Bridge can reference it."""
     os.makedirs("data", exist_ok=True)
     sites = json.load(open(FAKE_SITES_FILE)) if os.path.exists(FAKE_SITES_FILE) else []
-    sites.append({
+    entry = {
         "id":              site_id,
         "domain":          domain,
         "portal_type":     portal_type,
@@ -590,8 +768,19 @@ def record_fake_site(site_id, domain, portal_type, classification,
         "explanation":     explanation,
         "canary_username": canary_username,
         "detected_at":     detected_at or datetime.now().isoformat(),
-    })
+    }
+    sites.append(entry)
     json.dump(sites, open(FAKE_SITES_FILE, "w"), indent=2)
+
+    # DB insert
+    conn = _get_db_connection()
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO fake_sites (id, domain, portal_type, classification, explanation, canary_username, detected_at) VALUES (?,?,?,?,?,?,?)",
+        (site_id, domain, portal_type, classification, explanation, canary_username, entry["detected_at"])
+    )
+    conn.commit()
+    conn.close()
 
 
 def record_kavach_alert(alert_id, portal_type, zone, rule, severity,
@@ -599,7 +788,7 @@ def record_kavach_alert(alert_id, portal_type, zone, rule, severity,
     """Stores a KAVACH alert so Bridge can reference it."""
     os.makedirs("data", exist_ok=True)
     alerts = json.load(open(KAVACH_ALERTS_FILE)) if os.path.exists(KAVACH_ALERTS_FILE) else []
-    alerts.append({
+    entry = {
         "id":          alert_id,
         "portal_type": portal_type,
         "zone":        zone,
@@ -609,8 +798,40 @@ def record_kavach_alert(alert_id, portal_type, zone, rule, severity,
         "source_ips":  source_ips,
         "message":     message,
         "detected_at": detected_at or datetime.now().isoformat(),
-    })
+    }
+    alerts.append(entry)
     json.dump(alerts, open(KAVACH_ALERTS_FILE, "w"), indent=2)
+
+    # DB insert
+    conn = _get_db_connection()
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO kavach_alerts (id, portal_type, zone, rule, severity, z_score, source_ips, message, detected_at) VALUES (?,?,?,?,?,?,?,?,?)",
+        (alert_id, portal_type, zone, rule, severity, z_score, json.dumps(source_ips), message, entry["detected_at"])
+    )
+    conn.commit()
+    conn.close()
+
+
+def query_fake_sites():
+    conn = _get_db_connection()
+    rows = conn.execute("SELECT * FROM fake_sites ORDER BY detected_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def query_kavach_alerts():
+    conn = _get_db_connection()
+    rows = conn.execute("SELECT * FROM kavach_alerts ORDER BY detected_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def query_canaries():
+    conn = _get_db_connection()
+    rows = conn.execute("SELECT * FROM canaries ORDER BY deployed_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def run_bridge() -> list:
@@ -634,9 +855,19 @@ def run_bridge() -> list:
     auto_cut = now - timedelta(hours=BRIDGE_AUTO_HOURS)
     rev_cut  = now - timedelta(days=BRIDGE_REVIEW_DAYS)
 
-    sites   = json.load(open(FAKE_SITES_FILE))   if os.path.exists(FAKE_SITES_FILE)   else []
-    alerts  = json.load(open(KAVACH_ALERTS_FILE)) if os.path.exists(KAVACH_ALERTS_FILE) else []
-    canaries= json.load(open(CANARY_FILE))        if os.path.exists(CANARY_FILE)        else []
+    conn = _get_db_connection()
+    c = conn.cursor()
+    sites = [dict(row) for row in c.execute("SELECT * FROM fake_sites").fetchall()]
+    alerts = [dict(row) for row in c.execute("SELECT * FROM kavach_alerts").fetchall()]
+    canaries = [dict(row) for row in c.execute("SELECT * FROM canaries").fetchall()]
+    conn.close()
+
+    if not sites and os.path.exists(FAKE_SITES_FILE):
+        sites = json.load(open(FAKE_SITES_FILE))
+    if not alerts and os.path.exists(KAVACH_ALERTS_FILE):
+        alerts = json.load(open(KAVACH_ALERTS_FILE))
+    if not canaries and os.path.exists(CANARY_FILE):
+        canaries = json.load(open(CANARY_FILE))
 
     # Only consider confirmed/probable fake sites within review window
     active_sites  = [
