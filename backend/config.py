@@ -7,28 +7,44 @@ from pathlib import Path
 # DOMAIN & PORTAL CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════════════
 
-REAL_DOMAINS = [
+def _get_env_list(key, default):
+    val = os.environ.get(key)
+    if val:
+        return [item.strip() for item in val.split(',')]
+    return default
+
+REAL_DOMAINS = _get_env_list('REAL_DOMAINS', [
     'mcdonline', 'mcdpropertytax', 'mcdwatertax', 'mcdbirthdeath',
     'mcdtradelicence', 'mcdparkingfee', 'mcdbuilding', 'mcdfactorylicence',
     'mcdmarriageregistration', 'mcdfoodlicence', 'mcdpetlicence', 'mcdhealthlicence',
     'mcdadvertisementlicence', 'mcddemolition', 'mcdnewwater', 'mcdsewerage',
     'mcdsolidwaste', 'mcdstreetvending', 'mcdhorticulture'
-]
+])
 
-MCD_KEYWORDS = [
+MCD_KEYWORDS = _get_env_list('MCD_KEYWORDS', [
     'mcd', 'delhi', 'nagar', 'nigam', 'municipal', 'corporation', 'property',
     'water', 'tax', 'birth', 'trade', 'licence', 'payment', 'pay', 'portal',
     'propertytax', 'watertax', 'mcdonline'
-]
+])
 
-PORTALS = ['property_tax', 'water_tax', 'birth_death', 'trade_licence']
+PORTALS = _get_env_list('PORTALS', ['property_tax', 'water_tax', 'birth_death', 'trade_licence'])
 
-REAL_PORTAL_URLS = {
+# Helper to get dict from env (e.g. KEY1:VAL1,KEY2:VAL2)
+def _get_env_dict(key, default):
+    val = os.environ.get(key)
+    if not val:
+        return default
+    try:
+        return dict(item.split(':') for item in val.split(','))
+    except Exception:
+        return default
+
+REAL_PORTAL_URLS = _get_env_dict("REAL_PORTAL_URLS", {
     "property_tax":  "https://mcdonline.nic.in/propertytax",
     "water_tax":     "https://mcdonline.nic.in/watertax",
     "birth_death":   "https://mcdonline.nic.in/birthdeath",
     "trade_licence": "https://mcdonline.nic.in/tradelicence"
-}
+})
 
 # ═══════════════════════════════════════════════════════════════════════════════════════
 # MODEL THRESHOLDS (Drishti - Phishing Detection)

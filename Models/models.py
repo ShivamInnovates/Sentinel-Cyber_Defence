@@ -29,7 +29,8 @@ from scipy.sparse import vstack
 from backend.config import (
     REAL_DOMAINS, MCD_KEYWORDS, LEVENSHTEIN_THRESHOLD, KEYWORD_MIN_COUNT, COMPOSITE_CONFIRMED,
     COMPOSITE_PROBABLE, ZSCORE_RED, ZSCORE_YELLOW, ADMIN_OFFHOURS_START, ADMIN_OFFHOURS_END,
-    BRIDGE_AUTO_HOURS, BRIDGE_REVIEW_DAYS, CORPUS_FILE, FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE
+    BRIDGE_AUTO_HOURS, BRIDGE_REVIEW_DAYS, CORPUS_FILE, FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE,
+    REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, DATA_DIR
 )
 
 try:
@@ -37,11 +38,16 @@ try:
 except ImportError:
     notify_canary_trigger = lambda *args: None  # Fallback if not available
 
-r=redis.Redis(host="localhost", port=6379, decode_responses=True)
+r = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    password=REDIS_PASSWORD,
+    decode_responses=True
+)
 
 import sqlite3
 
-DB_FILE = "data/sentinel.db"
+DB_FILE = os.path.join(DATA_DIR, "sentinel.db")
 
 
 def _get_db_connection():
