@@ -6,6 +6,8 @@ export function ChatBot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSources, setShowSources] = useState(false);
+  const [lastSources, setLastSources] = useState([]);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -37,6 +39,7 @@ export function ChatBot() {
       const data = await response.json();
       const assistantMessage = { role: 'assistant', content: data.answer };
       setMessages(prev => [...prev, assistantMessage]);
+      setLastSources(data.sources || []);
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage = { role: 'assistant', content: 'Error communicating with SENTINEL. Please try again.' };
@@ -46,9 +49,24 @@ export function ChatBot() {
     }
   };
 
+  const clearHistory = async () => {
+    try {
+      await fetch('http://127.0.0.1:8000/api/clear-history', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': 'sentinel-demo-key',
+        },
+      });
+      setMessages([]);
+      setLastSources([]);
+      setShowSources(false);
+    } catch (error) {
+      console.error('Clear history error:', error);
+    }
+  };
+
   return (
     <div className="chatbot-widget">
-      {/* Floating Button */}
       <button
         className="chatbot-toggle"
         onClick={() => setIsOpen(!isOpen)}
@@ -59,12 +77,18 @@ export function ChatBot() {
         </svg>
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="chatbot-window">
           <div className="chatbot-header">
             <h3>SENTINEL Chatbot</h3>
-            <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {messages.length > 0 && (
+                <button className="icon-btn" onClick={clearHistory} title="Clear history">
+                  🗑️
+                </button>
+              )}
+              <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
+            </div>
           </div>
 
           <div className="chatbot-messages">
@@ -85,6 +109,26 @@ export function ChatBot() {
                 <div className="message-content typing">
                   <span></span><span></span><span></span>
                 </div>
+              </div>
+            )}
+            {lastSources.length > 0 && (
+              <div className="sources-indicator">
+                <button 
+                  onClick={() => setShowSources(!showSources)}
+                  style={{ cursor: 'pointer', background: 'none', border: 'none', color: 'var(--accent)', fontSize: '12px' }}
+                >
+                  📚 {lastSources.length} source{lastSources.length !== 1 ? 's' : ''} {showSources ? '▼' : '▶'}
+                </button>
+                {showSources && (
+                  <div className="sources-list">
+                    {lastSources.map((src, idx) => (
+                      <div key={idx} className="source-item">
+                        <strong>Page {src.page}</strong>
+                        <p>{src.snippet}...</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -108,3 +152,4 @@ export function ChatBot() {
     </div>
   );
 }
+
