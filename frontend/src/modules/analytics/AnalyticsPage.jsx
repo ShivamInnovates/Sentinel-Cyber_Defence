@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../../store';
+import { ErrorBoundary } from '../../components/shared/ErrorBoundary';
 import { fetchLogFile, createStreamer } from '../../utils/loadLogs';
 
 /* ── constants ── */
@@ -272,7 +273,8 @@ export default function AnalyticsPage() {
 
   // ── render ─────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <ErrorBoundary>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -449,6 +451,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 

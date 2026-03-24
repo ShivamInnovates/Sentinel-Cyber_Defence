@@ -1,6 +1,7 @@
 // SimulationPage.jsx — Fixed: merge conflict markers removed, polls real backend
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../store';
+import { ErrorBoundary } from '../../components/shared/ErrorBoundary';
 
 const ACTOR_COLORS = {
   DRISHTI: '#3ecf8e',
@@ -107,7 +108,8 @@ export default function SimulationPage() {
     : 0;
 
   return (
-    <div>
+    <ErrorBoundary>
+      <div>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <div>
@@ -285,5 +287,6 @@ export default function SimulationPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

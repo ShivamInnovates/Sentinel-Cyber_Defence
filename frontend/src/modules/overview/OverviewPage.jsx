@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
 import { ThreatTrendChart, SeverityDonut } from '../../components/charts';
 import LiveFeed from '../../components/shared/LiveFeed';
+import { ErrorBoundary } from '../../components/shared/ErrorBoundary';
 import { fetchLogFile, createStreamer } from '../../utils/loadLogs';
 
 const SEV_COLOR = { CRITICAL: '#ef4444', HIGH: '#f59e0b', MEDIUM: '#6384BE', LOW: '#6b7280' };
@@ -166,7 +167,8 @@ export default function OverviewPage() {
   ];
 
   return (
-    <div>
+    <ErrorBoundary>
+      <div>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 6 }}>
           Security Overview
@@ -359,5 +361,6 @@ export default function OverviewPage() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

@@ -8,6 +8,7 @@ import { DateTime } from 'luxon';
 
 const API_BASE = 'http://127.0.0.1:8000/api';
 const API_KEY = 'sentinel-demo-key'; // or from env
+const now = () => new Date().toISOString();
 
 export const useStore = create((set, get) => ({
   domains: [],

@@ -1,0 +1,80 @@
+# 🚀 Quick Git Upload - Copy & Paste Commands
+
+## One-Time Setup
+
+```bash
+# 1. Navigate to project root
+cd /mnt/windows/trinetra_delhi
+
+# 2. Initialize Git (if not already done)
+git init
+
+# 3. Configure your Git identity
+git config user.name "Your Name"
+git config user.email "your.email@example.com"
+
+# 4. Add all files
+git add .
+
+# 5. Check what will be uploaded (should show ~50-100 files, not 1000+)
+git status
+
+# 6. Make first commit
+git commit -m "Initial commit: SENTINEL Cyber Defense System with chat fix"
+
+# 7. Add your GitHub repository
+git remote add origin https://github.com/yourusername/repo-name.git
+
+# 8. Push to GitHub
+git branch -M main
+git push -u origin main
+```
+
+---
+
+## Done! 🎉
+
+Your project is now on GitHub!
+
+---
+
+## For Future Changes
+
+```bash
+# 1. Make your changes
+
+# 2. Add changes
+git add .
+
+# 3. Commit
+git commit -m "Description of changes"
+
+# 4. Push
+git push
+```
+
+---
+
+## Verify It Worked
+
+```bash
+# Check git status (should be clean)
+git status
+
+# Should show "On branch main" and "nothing to commit"
+
+# View your commits
+git log --oneline
+
+# Check size (should be small, under 50 MB)
+du -sh .git/
+```
+
+---
+
+## Need Help?
+
+- Read full guide: **GIT_UPLOAD_GUIDE.md**
+- Check what's being ignored: `git check-ignore -v filename`
+- See repository size: `du -sh .git/`
+- List tracked files: `git ls-files | wc -l`

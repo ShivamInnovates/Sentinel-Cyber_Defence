@@ -1,0 +1,228 @@
+# ============================================================================
+# Sentinel-Cyber_Defence .gitignore
+# ============================================================================
+
+# ──────────────────────────────────────────────────────────────────────────
+# BACKEND - Python Virtual Environment & Dependencies
+# ──────────────────────────────────────────────────────────────────────────
+
+# Don't include the virtual environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv
+
+# ──────────────────────────────────────────────────────────────────────────
+# FRONTEND - Node.js & npm
+# ──────────────────────────────────────────────────────────────────────────
+
+# Dependencies
+frontend/node_modules/
+frontend/package-lock.json
+frontend/yarn.lock
+
+# npm
+frontend/npm-debug.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.npm
+
+# Build output
+frontend/dist/
+frontend/build/
+
+# ESLint Cache
+frontend/.eslintcache
+
+# ──────────────────────────────────────────────────────────────────────────
+# IDE & Editor
+# ──────────────────────────────────────────────────────────────────────────
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+.project
+.pydevproject
+.settings/
+
+# ──────────────────────────────────────────────────────────────────────────
+# OS & System Files
+# ──────────────────────────────────────────────────────────────────────────
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.lnk
+$RECYCLE.BIN/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Environment & Configuration
+# ──────────────────────────────────────────────────────────────────────────
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.crt
+
+# ──────────────────────────────────────────────────────────────────────────
+# Logs & Temporary Files
+# ──────────────────────────────────────────────────────────────────────────
+
+*.log
+*.log.*
+logs/
+.log
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ──────────────────────────────────────────────────────────────────────────
+# Data & Cache Files
+# ──────────────────────────────────────────────────────────────────────────
+
+# Vector Store (can be regenerated)
+sentinel_vectorstore/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python Cache
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+.hypothesis/
+nosetests.xml
+coverage.xml
+*.cover
+.py,cover
+
+# Node Modules Cache
+frontend/.cache/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Large Model Files (if present)
+# ──────────────────────────────────────────────────────────────────────────
+
+*.bin
+*.pb
+*.h5
+*.pkl
+*.joblib
+models/*/
+!models/__init__.py
+!models/demo.py
+!models/models.py
+
+# HuggingFace/PyTorch Cache
+.cache/huggingface/
+torch_home/
+hub/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Local Testing & Documentation (Optional)
+# ──────────────────────────────────────────────────────────────────────────
+
+# Local test files
+test_*.py
+*_test.py
+.pytest_cache/
+
+# Jupyter Notebooks (if used)
+.ipynb_checkpoints/
+*.ipynb
+
+# Generated Files (can be regenerated)
+uploaded_*.pdf
+*.generated.json
+
+# ──────────────────────────────────────────────────────────────────────────
+# Backend Specific Files
+# ──────────────────────────────────────────────────────────────────────────
+
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/uploaded_*
+backend/sentinel_vectorstore/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Frontend Specific Files
+# ──────────────────────────────────────────────────────────────────────────
+
+frontend/dist/
+frontend/.vite
+frontend/.parcel-cache
+frontend/coverage/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Keep These Important Files
+# ──────────────────────────────────────────────────────────────────────────
+
+# DO NOT IGNORE:
+# - *.py source files
+# - *.jsx, *.js source files
+# - *.json configuration files
+# - *.md documentation files
+# - *.txt requirements files
+# - .gitignore itself
+# - README files
+# - Start scripts and configuration
+
+# ──────────────────────────────────────────────────────────────────────────
+# Exception Rules (use ! to override ignore)
+# ──────────────────────────────────────────────────────────────────────────
+
+# Keep important directories
+!models/
+!backend/data/
+!data/
+!inputs/
+!outputs/
+!screenshots/
+!reference_screenshots/
+
+# Keep configuration files
+!.gitignore
+!.env.example
+!.eslintrc.json
+!eslint.config.js
+
+# Keep scripts
+!backend/start_server.sh
+!backend/start_server.bat

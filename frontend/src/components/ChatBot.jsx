@@ -27,6 +27,9 @@ export function ChatBot() {
     setLoading(true);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch('http://127.0.0.1:8000/api/chat', {
         method: 'POST',
         headers: {
@@ -34,7 +37,14 @@ export function ChatBot() {
           'X-API-KEY': 'sentinel-demo-key',
         },
         body: JSON.stringify({ query: input }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const data = await response.json();
       const assistantMessage = { role: 'assistant', content: data.answer };
@@ -42,7 +52,25 @@ export function ChatBot() {
       setLastSources(data.sources || []);
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage = { role: 'assistant', content: 'Error communicating with SENTINEL. Please try again.' };
+      let errorMessage;
+      
+      if (error.name === 'AbortError') {
+        errorMessage = { 
+          role: 'assistant', 
+          content: 'Request timed out. The SENTINEL backend may be unavailable. Please ensure the backend server is running on port 8000 and try again.' 
+        };
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = { 
+          role: 'assistant', 
+          content: 'Unable to connect to SENTINEL backend at http://127.0.0.1:8000. Please verify:\n1. Backend server is running\n2. Port 8000 is accessible\n3. CORS is enabled' 
+        };
+      } else {
+        errorMessage = { 
+          role: 'assistant', 
+          content: `SENTINEL error: ${error.message || 'Unknown error. Please try again.'}` 
+        };
+      }
+      
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
@@ -51,17 +79,26 @@ export function ChatBot() {
 
   const clearHistory = async () => {
     try {
-      await fetch('http://127.0.0.1:8000/api/clear-history', {
+      const response = await fetch('http://127.0.0.1:8000/api/clear-history', {
         method: 'POST',
         headers: {
           'X-API-KEY': 'sentinel-demo-key',
         },
       });
+
+      if (!response.ok) {
+        console.warn(`Clear history returned ${response.status}`);
+      }
+
       setMessages([]);
       setLastSources([]);
       setShowSources(false);
     } catch (error) {
       console.error('Clear history error:', error);
+      // Still clear UI even if backend fails
+      setMessages([]);
+      setLastSources([]);
+      setShowSources(false);
     }
   };
 
