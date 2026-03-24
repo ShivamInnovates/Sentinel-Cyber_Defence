@@ -12,8 +12,9 @@ from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Add current dir to path so `config` and `step4_models` resolve
+# Add current dir and parent dir to path so modules resolve
 sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from config import FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE
 from Models.models import (
