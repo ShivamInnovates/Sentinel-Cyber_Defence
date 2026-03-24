@@ -95,14 +95,30 @@ function FakeSitesTab() {
 function PhishingTab() {
   const [manualText, setManualText] = useState('');
   const [manualResult, setManualResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const analyzeManual = () => {
+  const analyzeManual = async () => {
     if (!manualText.trim()) return;
-    const lower = manualText.toLowerCase();
-    const isHigh = lower.includes('aadhaar') || lower.includes('urgent') || lower.includes('suspended');
-    const isMed  = lower.includes('mcd') || lower.includes('delhi') || lower.includes('payment');
-    setManualResult(isHigh ? 'CRITICAL' : isMed ? 'HIGH' : 'MEDIUM');
+    setLoading(true);
+    setManualResult(null);
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/classify-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: manualText }),
+      });
+      const data = await res.json();
+      setManualResult(data);
+    } catch {
+      // Fallback to local scoring if backend is offline
+      const lower = manualText.toLowerCase();
+      const sev = lower.includes('aadhaar') || lower.includes('urgent') || lower.includes('suspended') ? 'CRITICAL'
+               : lower.includes('mcd') || lower.includes('payment') ? 'HIGH' : 'MEDIUM';
+      setManualResult({ offline: true, severity: sev });
+    }
+    setLoading(false);
   };
+
 
   return (
     <div>
@@ -132,13 +148,23 @@ function PhishingTab() {
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border-dim)'}
           />
-          <button onClick={analyzeManual} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#0f0f0f', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            Analyze
+          <button onClick={analyzeManual} disabled={loading} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--accent)', border: 'none', color: '#0f0f0f', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
+            {loading ? 'Analyzing…' : 'Analyze'}
           </button>
         </div>
         {manualResult && (
-          <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: RISK_STYLE[manualResult].bg, border: `1px solid ${RISK_STYLE[manualResult].border}`, fontSize: 13, color: RISK_STYLE[manualResult].color, fontWeight: 600 }}>
-            Risk Level: {manualResult} — {manualResult === 'CRITICAL' ? 'Highly suspicious. Contains Aadhaar/urgency triggers.' : 'Contains MCD-related keywords. Monitor closely.'}
+          <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-raised)', border: '1px solid var(--border-dim)', fontSize: 13, color: 'var(--text-primary)' }}>
+            {manualResult.offline ? (
+              <span style={{ color: RISK_STYLE[manualResult.severity]?.color }}>⚠ Backend offline — Local risk estimate: <strong>{manualResult.severity}</strong></span>
+            ) : (
+              <span>
+                <strong style={{ color: manualResult.is_new ? 'var(--critical)' : 'var(--success)' }}>
+                  {manualResult.is_new ? '🆕 New campaign detected' : `📎 Joined Campaign #${manualResult.campaign_id}`}
+                </strong>
+                {manualResult.confidence && <span style={{ marginLeft: 10, color: 'var(--text-muted)' }}>Confidence: {manualResult.confidence}%</span>}
+                {manualResult.velocity?.alert && <span style={{ marginLeft: 10, color: 'var(--high)' }}>⚡ {manualResult.velocity.alert} ({manualResult.velocity.count} in 2hrs)</span>}
+              </span>
+            )}
           </div>
         )}
       </div>

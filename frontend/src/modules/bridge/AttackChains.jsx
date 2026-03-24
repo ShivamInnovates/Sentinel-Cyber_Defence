@@ -7,6 +7,22 @@ const SOURCE_STYLE = {
   BRIDGE:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.3)', label: 'BRIDGE', sub: 'Correlation' },
 };
 
+// Normalize backend bridge result → UI-expected shape
+function normalize(c, i) {
+  const confScore = c.confidence === 'CONFIRMED' ? 97 : c.confidence === 'LIKELY' ? 84 : c.confidence === 'PROBABLE' ? 72 : 50;
+  return {
+    id:             c.id || `BR${String(i + 1).padStart(3, '0')}`,
+    externalThreat: c.fake_site  || 'Unknown domain',
+    internalEvent:  `Login Spike — ${c.portal_type || 'Portal'} (Z-score elevated)`,
+    confidence:     confScore,
+    type:           'Phishing → Credential Stuffing',
+    timestamp:      c.gap_minutes ? `${c.gap_minutes}min gap` : '',
+    confirmed:      c.confidence === 'CONFIRMED' || c.confidence === 'LIKELY',
+    story:          c.message || '',
+  };
+}
+
+
 function SourceBadge({ source }) {
   const s = SOURCE_STYLE[source];
   return (
@@ -211,10 +227,12 @@ function AttackCard({ c, expanded, onToggle }) {
 
 export default function AttackChains() {
   const { correlations } = useStore();
-  const [expandedId, setExpandedId] = useState(correlations[0]?.id ?? null);
+  // normalize each raw backend correlation object to UI shape
+  const chains = correlations.map((c, i) => normalize(c, i));
+  const [expandedId, setExpandedId] = useState(chains[0]?.id ?? null);
 
-  const confirmed   = correlations.filter(c => c.confirmed);
-  const unconfirmed = correlations.filter(c => !c.confirmed);
+  const confirmed   = chains.filter(c => c.confirmed);
+  const unconfirmed = chains.filter(c => !c.confirmed);
 
   return (
     <div>
@@ -243,9 +261,9 @@ export default function AttackChains() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
-          { label: 'Total Chains',    value: correlations.length, color: 'var(--accent)' },
-          { label: 'Confirmed',       value: confirmed.length,    color: 'var(--critical)' },
-          { label: 'Investigating',   value: unconfirmed.length,  color: 'var(--high)' },
+          { label: 'Total Chains',    value: chains.length,      color: 'var(--accent)' },
+          { label: 'Confirmed',       value: confirmed.length,   color: 'var(--critical)' },
+          { label: 'Investigating',   value: unconfirmed.length, color: 'var(--high)' },
         ].map(s => (
           <div key={s.label} className="card" style={{ padding: '16px 20px' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: s.color, letterSpacing: '-0.03em', marginBottom: 4 }}>{s.value}</div>
@@ -255,16 +273,23 @@ export default function AttackChains() {
       </div>
 
       {/* Chain cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {correlations.map(c => (
-          <AttackCard
-            key={c.id}
-            c={c}
-            expanded={expandedId === c.id}
-            onToggle={() => setExpandedId(prev => prev === c.id ? null : c.id)}
-          />
-        ))}
-      </div>
+      {chains.length === 0 ? (
+        <div className="card" style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--success)', fontWeight: 600 }}>
+          ✓ No correlated attack chains yet. Run the Attack Simulation to generate Bridge correlations.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {chains.map(c => (
+            <AttackCard
+              key={c.id}
+              c={c}
+              expanded={expandedId === c.id}
+              onToggle={() => setExpandedId(prev => prev === c.id ? null : c.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+

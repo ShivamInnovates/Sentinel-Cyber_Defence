@@ -7,13 +7,14 @@ import {
 import { DateTime } from 'luxon';
 
 const now = () => DateTime.now().setZone('Asia/Kolkata').toFormat('HH:mm:ss');
+const API_BASE = 'http://127.0.0.1:8000/api';
 
-export const useStore = create((set) => ({
-  domains:      getMockDomains(),
-  events:       getMockEvents(),
-  correlations: getMockCorrelations(),
-  kpis:         getMockKPIs(),
-  canaries:     getMockCanaries(),
+export const useStore = create((set, get) => ({
+  domains:      [],
+  events:       [],
+  correlations: [],
+  kpis:         getMockKPIs(), // keep mock for static parts if needed, overwritten by fetchData
+  canaries:     [],
   trendData:    getMockTrendData(),
   zoneActivity: getMockZoneActivity(),
   liveFeed:     [],
@@ -28,6 +29,24 @@ export const useStore = create((set) => ({
   simActive: false,
   simLog:    [],
   simStep:   0,
+
+  fetchData: async () => {
+    try {
+      const [kpis, domains, events, canaries, correlations] = await Promise.all([
+        fetch(`${API_BASE}/kpi`).then(res => res.json()),
+        fetch(`${API_BASE}/domains`).then(res => res.json()),
+        fetch(`${API_BASE}/events`).then(res => res.json()),
+        fetch(`${API_BASE}/canaries`).then(res => res.json()),
+        fetch(`${API_BASE}/correlations`).then(res => res.json()),
+      ]);
+      set((s) => ({
+        kpis: { ...s.kpis, ...kpis },
+        domains, events, canaries, correlations
+      }));
+    } catch (err) {
+      console.warn('Backend fetch failed', err);
+    }
+  },
 
   setActiveModule: (module) => set({ activeModule: module }),
 

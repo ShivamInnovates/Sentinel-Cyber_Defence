@@ -49,6 +49,14 @@ export default function App() {
 
   useEffect(() => {
     AOS.init({ duration: 400, easing: 'ease-out-cubic', once: true, offset: 12 });
+    
+    // Initial fetch
+    useStore.getState().fetchData();
+    // Poll every 2 seconds
+    const interval = setInterval(() => {
+      useStore.getState().fetchData();
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => { setTimeout(() => AOS.refresh(), 50); }, [activeModule]);
