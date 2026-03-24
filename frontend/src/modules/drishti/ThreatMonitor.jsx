@@ -113,7 +113,7 @@ function PhishingTab() {
     try {
       const res = await fetch('http://127.0.0.1:8000/api/classify-report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': 'sentinel-demo-key' },
         body: JSON.stringify({ text: manualText }),
       });
       const data = await res.json();

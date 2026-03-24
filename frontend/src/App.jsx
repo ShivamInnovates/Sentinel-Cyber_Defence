@@ -3,6 +3,7 @@ import AOS from 'aos';
 import { useStore } from './store';
 import Navbar from './components/layout/Navbar';
 import CyberBackground from './components/shared/CyberBackground';
+import { ChatBot } from './components/ChatBot';
 
 import LandingPage        from './modules/landing/LandingPage.jsx';
 import OverviewPage       from './modules/overview/OverviewPage.jsx';
@@ -68,6 +69,7 @@ export default function App() {
     <div className="app-shell">
       <CyberBackground />
       <Navbar collapsed={navCollapsed} onToggle={() => setNavCollapsed(v => !v)} />
+      <ChatBot />
       <div className={`app-main${navCollapsed ? ' nav-collapsed' : ''}`} style={{ position: 'relative', zIndex: 1 }}>
         {isLanding
           ? <div key={activeModule}>{PAGES[activeModule]}</div>

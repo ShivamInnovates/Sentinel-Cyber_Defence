@@ -24,6 +24,8 @@ from Models.models import (
 )
 from Models.demo import run_automated_demo, get_sim_log, get_sim_state
 from notifications import notify_alert, notify_correlation, notify_canary_trigger
+from chat_history import ChatHistory
+
 app = FastAPI(title="SENTINEL Cyber Defense API", version="1.0.0")
 
 app.add_middleware(
@@ -46,6 +48,31 @@ def verify_api_key(api_key: str = Header(None, alias=API_KEY_NAME)):
 
 # Pre-fit TF-IDF on startup
 fit_model()
+
+# Initialize chat history
+chat_history = ChatHistory()
+
+
+# --- Pydantic models ---
+class QueryRequest(BaseModel):
+    query: str
+
+
+# --- CHAT ENDPOINT ---
+@app.post("/api/chat")
+def chat(req: QueryRequest, api_key: bool = Depends(verify_api_key)):
+    """Chat endpoint integrated with PDF retrieval."""
+    try:
+        chat_history.add_message("user", req.query)
+        # Simple response generation (can be enhanced with LLM)
+        answer = f"Processing your query about SENTINEL: {req.query}"
+        chat_history.add_message("assistant", answer)
+        return {
+            "answer": answer,
+            "history": chat_history.get_history()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ─────────────────────────────────────────────

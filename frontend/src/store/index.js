@@ -6,8 +6,8 @@ import {
 } from '../services/mockApi';
 import { DateTime } from 'luxon';
 
-const now = () => DateTime.now().setZone('Asia/Kolkata').toFormat('HH:mm:ss');
 const API_BASE = 'http://127.0.0.1:8000/api';
+const API_KEY = 'sentinel-demo-key'; // or from env
 
 export const useStore = create((set, get) => ({
   domains: [],
@@ -32,12 +32,13 @@ export const useStore = create((set, get) => ({
 
   fetchData: async () => {
     try {
+      const headers = { 'X-API-KEY': API_KEY };
       const [kpis, domains, events, canaries, correlations] = await Promise.all([
-        fetch(`${API_BASE}/kpi`).then(res => res.json()),
-        fetch(`${API_BASE}/domains`).then(res => res.json()),
-        fetch(`${API_BASE}/events`).then(res => res.json()),
-        fetch(`${API_BASE}/canaries`).then(res => res.json()),
-        fetch(`${API_BASE}/correlations`).then(res => res.json()),
+        fetch(`${API_BASE}/kpi`, { headers }).then(res => res.json()),
+        fetch(`${API_BASE}/domains`, { headers }).then(res => res.json()),
+        fetch(`${API_BASE}/events`, { headers }).then(res => res.json()),
+        fetch(`${API_BASE}/canaries`, { headers }).then(res => res.json()),
+        fetch(`${API_BASE}/correlations`, { headers }).then(res => res.json()),
       ]);
       set((s) => ({
         kpis: { ...s.kpis, ...kpis },
