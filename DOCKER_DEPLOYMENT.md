@@ -37,10 +37,10 @@ cp .env.example .env.prod
 
 ```bash
 # Start services in the foreground (see logs in real-time)
-docker-compose up
+docker compose up
 
 # OR start in the background (daemon mode)
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 4. Access the Application
@@ -56,13 +56,13 @@ Once services are running:
 
 ```bash
 # Stop services (containers persist)
-docker-compose stop
+docker compose stop
 
 # Stop and remove containers
-docker-compose down
+docker compose down
 
 # Stop, remove containers, and delete volumes (clean slate)
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Configuration
@@ -116,13 +116,13 @@ For different environments, create separate env files:
 
 ```bash
 # Development
-docker-compose --env-file .env.dev up
+docker compose --env-file .env.dev up
 
 # Production
-docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d
+docker compose --env-file .env.prod -f docker compose.prod.yml up -d
 
 # Staging
-docker-compose --env-file .env.staging up
+docker compose --env-file .env.staging up
 ```
 
 ## Building Images
@@ -130,27 +130,27 @@ docker-compose --env-file .env.staging up
 ### Rebuild All Images
 
 ```bash
-docker-compose build
+docker compose build
 ```
 
 ### Rebuild Specific Service
 
 ```bash
 # Rebuild backend only
-docker-compose build backend
+docker compose build backend
 
 # Rebuild frontend only
-docker-compose build frontend
+docker compose build frontend
 ```
 
 ### Build for Production (Optimized)
 
 ```bash
 # Build without cache for production
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Build with specific architecture
-docker-compose build --build-arg PYTHON_VERSION=3.13
+docker compose build --build-arg PYTHON_VERSION=3.13
 ```
 
 ## Networking
@@ -194,7 +194,7 @@ volumes:
 
 ```bash
 # Backup Redis data
-docker-compose exec redis redis-cli --rdb /data/dump.rdb
+docker compose exec redis redis-cli --rdb /data/dump.rdb
 
 # Backup application logs
 cp -r ./backend/logs ./backups/logs-$(date +%Y%m%d)
@@ -206,32 +206,32 @@ cp -r ./backend/logs ./backups/logs-$(date +%Y%m%d)
 
 ```bash
 # View all service logs
-docker-compose logs
+docker compose logs
 
 # View specific service logs
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs redis
+docker compose logs backend
+docker compose logs frontend
+docker compose logs redis
 
 # Follow logs in real-time
-docker-compose logs -f
+docker compose logs -f
 
 # View last 100 lines of backend logs
-docker-compose logs --tail=100 backend
+docker compose logs --tail=100 backend
 ```
 
 ### Health Checks
 
 ```bash
 # Check service health
-docker-compose ps
+docker compose ps
 
 # Manual health check
 curl http://localhost:8000/health
 curl http://localhost/health
 
 # Check Redis health
-docker-compose exec redis redis-cli ping
+docker compose exec redis redis-cli ping
 ```
 
 ### Performance Monitoring
@@ -274,7 +274,7 @@ LOG_LEVEL=WARNING
 
 ### Deploy with Docker Compose
 
-Create `docker-compose.prod.yml`:
+Create `docker compose.prod.yml`:
 
 ```yaml
 version: '3.9'
@@ -296,7 +296,7 @@ services:
 Start production deployment:
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml \
+docker compose -f docker compose.yml -f docker compose.prod.yml \
   --env-file .env.prod up -d
 ```
 
@@ -336,23 +336,23 @@ server {
 
 ```bash
 # Check container logs
-docker-compose logs backend
+docker compose logs backend
 
 # Inspect container
 docker inspect trinetra-backend
 
 # Restart container with verbose output
-docker-compose up backend
+docker compose up backend
 ```
 
 ### Redis Connection Issues
 
 ```bash
 # Test Redis connection from backend container
-docker-compose exec backend redis-cli -h redis -p 6379 ping
+docker compose exec backend redis-cli -h redis -p 6379 ping
 
 # If using password
-docker-compose exec backend redis-cli -h redis -p 6379 -a <password> ping
+docker compose exec backend redis-cli -h redis -p 6379 -a <password> ping
 ```
 
 ### Port Already in Use
@@ -381,7 +381,7 @@ VITE_API_BASE_URL=https://yourdomain.com/api
 ### Memory Issues
 
 ```bash
-# Limit container memory in docker-compose.yml
+# Limit container memory in docker compose.yml
 backend:
   deploy:
     resources:
@@ -405,15 +405,15 @@ Both Dockerfiles use multi-stage builds to minimize image size:
 To add custom models or ML components:
 
 1. Update requirements.txt with new dependencies
-2. Rebuild the backend image: `docker-compose build backend`
-3. Restart services: `docker-compose up -d`
+2. Rebuild the backend image: `docker compose build backend`
+3. Restart services: `docker compose up -d`
 
 ### Database Integration
 
 To add a PostgreSQL database:
 
 ```yaml
-# Add to docker-compose.yml
+# Add to docker compose.yml
 db:
   image: postgres:15-alpine
   environment:
@@ -428,7 +428,7 @@ DATABASE_URL=postgresql://user:password@db:5432/trinetra
 
 ## Kubernetes Deployment
 
-For Kubernetes, convert docker-compose to Helm charts or use Kompose:
+For Kubernetes, convert docker compose to Helm charts or use Kompose:
 
 ```bash
 # Install Kompose
@@ -450,7 +450,7 @@ chmod +x kompose
 
 ```bash
 # Remove all containers and volumes
-docker-compose down -v
+docker compose down -v
 
 # Remove all unused images
 docker image prune

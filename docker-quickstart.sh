@@ -49,7 +49,9 @@ check_docker_compose() {
 
 # Function to use the correct docker compose command
 docker_compose_cmd() {
-    if command -v docker-compose >/dev/null 2>&1; then
+    if docker compose version >/dev/null 2>&1; then
+        echo "docker compose"
+    elif command -v docker-compose >/dev/null 2>&1; then
         echo "docker-compose"
     else
         echo "docker compose"

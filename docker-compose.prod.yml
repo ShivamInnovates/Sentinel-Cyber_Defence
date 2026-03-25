@@ -1,12 +1,10 @@
 # ========================================================================================
 # TRINETRA Cyber Defense - Production Docker Compose Override
 # ========================================================================================
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml \
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml \
 #        --env-file .env.prod up -d
 #
 # This file overrides settings from docker-compose.yml for production deployment
-
-version: '3.9'
 
 services:
   redis:

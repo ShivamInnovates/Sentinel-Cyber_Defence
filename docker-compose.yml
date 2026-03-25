@@ -3,8 +3,6 @@
 # ========================================================================================
 # Complete multi-container application setup with proper networking and persistence
 
-
-
 services:
   # ─────────────────────────────────────────────────────────────────────────────────
   # Redis - Caching & Session Storage
