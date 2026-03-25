@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Runtime - Minimal production image
@@ -35,11 +35,25 @@ RUN useradd -m -u 1000 appuser
 COPY --from=builder /install /usr/local
 
 # Copy application code
-COPY . .
+COPY backend/ ./backend/
+COPY Models/ ./Models/
+
+# Set Playwright browsers path
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/pw-browsers
 
 # Ensure directories exist and have proper permissions
-RUN mkdir -p data logs screenshots reference_screenshots \
+WORKDIR /app/backend
+RUN mkdir -p data logs screenshots reference_screenshots /app/pw-browsers \
     && chown -R appuser:appuser /app
+
+# Install Playwright dependencies (as root)
+RUN playwright install-deps chromium
+
+# Install Playwright browsers (as root, but to a shared path)
+RUN playwright install chromium
+
+# Final ownership check
+RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
