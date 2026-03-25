@@ -1,6 +1,6 @@
 // SimulationPage.jsx — Fixed: merge conflict markers removed, polls real backend
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { useStore } from '../../store';
+import { useStore, API_BASE, API_KEY } from '../../store';
 import { ErrorBoundary } from '../../components/shared/ErrorBoundary';
 
 const ACTOR_COLORS = {
@@ -54,7 +54,9 @@ export default function SimulationPage() {
     stopPolling();
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/sim-log');
+        const res = await fetch(`${API_BASE}/sim-log`, {
+          headers: { 'X-API-KEY': API_KEY }
+        });
         const data = await res.json();
         const steps = data.steps || [];
         const state = data.state || {};
@@ -82,10 +84,18 @@ export default function SimulationPage() {
     startSimulation();
 
     // Reset backend data first
-    try { await fetch('http://127.0.0.1:8000/api/sim-reset', { method: 'POST' }); } catch { }
+    try { 
+      await fetch(`${API_BASE}/sim-reset`, { 
+        method: 'POST',
+        headers: { 'X-API-KEY': API_KEY }
+      }); 
+    } catch { }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/simulate', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/simulate`, { 
+        method: 'POST',
+        headers: { 'X-API-KEY': API_KEY }
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       startPolling();
     } catch (err) {

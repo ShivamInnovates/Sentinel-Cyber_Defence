@@ -1,6 +1,6 @@
 // ThreatMonitor.jsx — Fixed: merge conflict markers removed, Analyze button hits backend
 import { useState } from 'react';
-import { useStore } from '../../store';
+import { useStore, API_BASE, API_KEY } from '../../store';
 import { SeverityBar } from '../../components/ui';
 
 const STATUS_STYLE = {
@@ -111,9 +111,9 @@ function PhishingTab() {
     setLoading(true);
     setManualResult(null);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/classify-report', {
+      const res = await fetch(`${API_BASE}/classify-report`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-KEY': 'sentinel-demo-key' },
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': API_KEY },
         body: JSON.stringify({ text: manualText }),
       });
       const data = await res.json();

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { API_BASE, API_KEY } from '../store';
 import '../styles/ChatBot.css';
 
 export function ChatBot() {
@@ -30,11 +31,11 @@ export function ChatBot() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const response = await fetch('http://127.0.0.1:8000/api/chat', {
+      const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': 'sentinel-demo-key',
+          'X-API-KEY': API_KEY,
         },
         body: JSON.stringify({ query: input }),
         signal: controller.signal
@@ -79,10 +80,10 @@ export function ChatBot() {
 
   const clearHistory = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/clear-history', {
+      const response = await fetch(`${API_BASE}/clear-history`, {
         method: 'POST',
         headers: {
-          'X-API-KEY': 'sentinel-demo-key',
+          'X-API-KEY': API_KEY,
         },
       });
 
