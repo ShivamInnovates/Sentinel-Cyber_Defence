@@ -25,21 +25,27 @@ git clone <repository-url>
 cd Sentinel-Cyber_Defence
 ```
 
-### 2. Prepare Environment Variables
+### 2. Start the Application (Recommended)
+
+The easiest way to start TRINETRA is using the automated scripts:
+
+- **Windows**: Run `start.bat` or `docker-start.bat`
+- **Linux/WSL/macOS**: Run `./start.sh` or `./docker-quickstart.sh`
+
+These scripts will:
+1. Verify Docker is running.
+2. Initialize your `.env` file automatically from `.env.example`.
+3. Provide a menu for starting/stopping services and viewing logs.
+
+### 3. Manual Startup (Advanced)
+
+If you prefer using Docker Compose directly:
 
 ```bash
-# Copy the example env file (already comes with .env file)
-# Or customize for your environment:
-cp .env.example .env.prod
-```
+# Prepare environment
+cp .env.example .env
 
-### 3. Start All Services
-
-```bash
-# Start services in the foreground (see logs in real-time)
-docker compose up
-
-# OR start in the background (daemon mode)
+# Start services
 docker compose up -d
 ```
 
