@@ -10,9 +10,15 @@ redis
 python-dotenv
 python-multipart
 transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
 pillow
 beautifulsoup4
 requests
 scikit-learn
 numpy
+imagehash
+rapidfuzz
+scipy
+certstream
+playwright

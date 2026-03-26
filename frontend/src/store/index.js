@@ -6,8 +6,8 @@ import {
 } from '../services/mockApi';
 import { DateTime } from 'luxon';
 
-const API_BASE = 'http://127.0.0.1:8000/api';
-const API_KEY = 'sentinel-demo-key'; // or from env
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+export const API_KEY = import.meta.env.VITE_API_KEY || 'TRINETRA-demo-key';
 const now = () => new Date().toISOString();
 
 export const useStore = create((set, get) => ({

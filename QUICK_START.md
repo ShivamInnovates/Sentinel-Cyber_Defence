@@ -2,25 +2,35 @@
 
 ## TL;DR - Start the Backend in 30 Seconds
 
-### Linux/macOS
+### Recommended: Docker (Easiest & Most Reliable)
+The Docker path avoids all dependency issues, especially on Windows.
+
+1. Install **Docker Desktop** (Windows/macOS) or **Docker Engine** (Linux).
+2. Run the universal startup script:
+   - **Windows**: Double-click `start.bat`
+   - **Linux/WSL/macOS**: Run `./start.sh`
+3. Choose **Option 1 (Docker)** from the menu.
+
+---
+
+### Alternative: Native (For Developers)
+If you must run natively without Docker:
+
+#### Linux/macOS
 ```bash
 cd Sentinel-Cyber_Defence/backend
 source ../../delhihack/bin/activate
 python -m uvicorn chatbot_app:app --reload --port 8000
 ```
 
-### Windows
+#### Windows
 ```cmd
 cd Sentinel-Cyber_Defence\backend
 ..\..\delhihack\Scripts\activate.bat
 python -m uvicorn chatbot_app:app --reload --port 8000
 ```
-
-### Then...
-1. Open the TRINETRA application in your browser
-2. Click the chat button (💬 icon)
-3. Type a message
-4. ✅ Should work!
+> [!WARNING]
+> Native installation on Windows often fails due to complex dependencies (Torch, Faiss, Playwright). Use Docker if you encounter "dependency issues".
 
 ---
 
@@ -43,26 +53,6 @@ curl http://127.0.0.1:8000/api/health
 ## Using the Startup Scripts (Easiest)
 
 ### Linux/macOS
-```bash
-cd Sentinel-Cyber_Defence/backend
-chmod +x start_server.sh
-./start_server.sh
-```
-
-### Windows
-```bash
-cd Sentinel-Cyber_Defence\backend
-start_server.bat
-```
-
-These scripts:
-- ✅ Activate the virtual environment automatically
-- ✅ Check Python installation
-- ✅ Install missing packages if needed
-- ✅ Start the server
-
----
-
 ## What Happens When You Start the Server
 
 ### Expected Output

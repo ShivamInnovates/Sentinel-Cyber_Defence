@@ -1,13 +1,23 @@
-# step3_baselines.py — generate Z-score baselines + seed phishing corpus
-# FIX: decode_responses (not decode_response), Redis key uses colon not dot
+# baselines.py — generate Z-score baselines + seed phishing corpus
+# Enterprise-grade with configurable Redis connection
 
 import numpy as np
 import json
 import os
 import redis
-from config import PORTALS, BASE_LOGIN_PER_HOUR, CORPUS_FILE
+from config import PORTALS, BASE_LOGIN_PER_HOUR, CORPUS_FILE, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB
 
-r = redis.Redis(host="localhost", port=6379, decode_responses=True)  # FIX: was decode_response
+# Initialize Redis with environment-based configuration
+redis_kwargs = {
+    "host": REDIS_HOST,
+    "port": REDIS_PORT,
+    "db": REDIS_DB,
+    "decode_responses": True
+}
+if REDIS_PASSWORD:
+    redis_kwargs["password"] = REDIS_PASSWORD
+
+r = redis.Redis(**redis_kwargs)
 
 HOUR_MULTIPLIERS = {
     0: 0.02, 1: 0.01, 2: 0.01, 3: 0.01, 4: 0.02, 5: 0.05,

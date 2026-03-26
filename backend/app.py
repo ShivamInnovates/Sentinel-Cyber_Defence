@@ -1,6 +1,6 @@
-# server.py — SENTINEL FastAPI backend
-# Run: uvicorn server:app --reload --port 8000
-# FIX: config is a separate file, all imports are absolute
+# app.py — TRINETRA FastAPI backend
+# Enterprise-grade deployment with environment-based configuration
+# Run: uvicorn app:app --reload --port 8000
 
 import os
 import sys
@@ -19,7 +19,10 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from config import FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE
+from config import (
+    FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE,
+    ALLOWED_ORIGINS, DEBUG, ENVIRONMENT, LOG_LEVEL
+)
 from Models.models import (
     score_domain, run_bridge, fit_model,
     classify_report, check_velocity, process_event,
@@ -30,34 +33,84 @@ from Models.demo import run_automated_demo, get_sim_log, get_sim_state
 from notifications import notify_alert, notify_correlation, notify_canary_trigger
 from chat_history import ChatHistory
 
-app = FastAPI(title="SENTINEL Cyber Defense API", version="1.0.0")
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# APPLICATION INITIALIZATION
+# ═══════════════════════════════════════════════════════════════════════════════════════
+
+app = FastAPI(
+    title="TRINETRA Cyber Defense API",
+    version="1.0.0",
+    debug=DEBUG
+)
+
+# ─────────────────────────────────────────────────────────────────────────────────────
+# CORS Configuration - from environment variable
+# ─────────────────────────────────────────────────────────────────────────────────────
+
+origins = ALLOWED_ORIGINS if isinstance(ALLOWED_ORIGINS, list) else [ALLOWED_ORIGINS]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Simple API key auth for protected endpoints
+# ─────────────────────────────────────────────────────────────────────────────────────
+# API Key Authentication
+# ─────────────────────────────────────────────────────────────────────────────────────
+
 API_KEY_NAME = "X-API-KEY"
-API_KEY = os.environ.get("SENTINEL_API_KEY", "sentinel-demo-key")
+API_KEY = os.environ.get("TRINETRA_API_KEY", "TRINETRA-demo-key")
 
 
 def verify_api_key(api_key: str = Header(None, alias=API_KEY_NAME)):
+    """Verify API key from request headers."""
     if api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return True
 
-# Pre-fit TF-IDF on startup
-fit_model()
+# ─────────────────────────────────────────────────────────────────────────────────────
+# Health Check Endpoint
+# ─────────────────────────────────────────────────────────────────────────────────────
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for container orchestration."""
+    return {
+        "status": "healthy",
+        "environment": ENVIRONMENT,
+        "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+# ─────────────────────────────────────────────────────────────────────────────────────
+# Startup Event - Initialize models and services
+# ─────────────────────────────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize critical services on application startup."""
+    print(f"[{datetime.utcnow().isoformat()}] Starting TRINETRA Backend")
+    print(f"  Environment: {ENVIRONMENT}")
+    print(f"  Debug Mode: {DEBUG}")
+    print(f"  Log Level: {LOG_LEVEL}")
+    
+    # Pre-fit TF-IDF model
+    try:
+        fit_model()
+        print("  ✓ TF-IDF Model loaded")
+    except Exception as e:
+        print(f"  ⚠ Failed to load TF-IDF Model: {e}")
 
 # Initialize chat history
 chat_history = ChatHistory()
 
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# PYDANTIC MODELS
+# ═══════════════════════════════════════════════════════════════════════════════════════
 
-# --- Pydantic models ---
 class QueryRequest(BaseModel):
     query: str
 
@@ -67,6 +120,9 @@ class AlertRequest(BaseModel):
 class CrossRealityRequest(BaseModel):
     cross_alert: dict
 
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════════════
 
 # --- CHAT ENDPOINT ---
 @app.post("/api/chat")
@@ -78,16 +134,16 @@ def chat(req: QueryRequest, api_key: bool = Depends(verify_api_key)):
         # Simple response based on query keywords
         query_lower = req.query.lower()
         if any(word in query_lower for word in ["threat", "attack", "phishing", "malware"]):
-            answer = "SENTINEL is actively monitoring for threats. Current threat level: MEDIUM with coordinated attacks detected on property_tax portals. Our AI models have identified cross-reality patterns suggesting coordinated campaigns."
+            answer = "TRINETRA is actively monitoring for threats. Current threat level: MEDIUM with coordinated attacks detected on property_tax portals. Our AI models have identified cross-reality patterns suggesting coordinated campaigns."
             sources = [{"page": "1", "source": "threat_analysis.pdf", "snippet": "Coordinated phishing campaigns targeting government portals..."}]
         elif any(word in query_lower for word in ["zone", "network", "infrastructure"]):
-            answer = "SENTINEL protects 12 zones covering critical infrastructure. Each zone has intelligent anomaly detection monitoring login patterns, domain reputation, and behavioral baselines."
+            answer = "TRINETRA protects 12 zones covering critical infrastructure. Each zone has intelligent anomaly detection monitoring login patterns, domain reputation, and behavioral baselines."
             sources = [{"page": "3", "source": "architecture.pdf", "snippet": "Multi-zone defense architecture with distributed monitoring nodes..."}]
-        elif any(word in query_lower for word in ["what", "who", "sentinel"]):
-            answer = "SENTINEL is a comprehensive cyber defense system combining three intelligence modules: Drishti (phishing detection), Kavach (anomaly detection), and Bridge (correlation analysis)."
-            sources = [{"page": "0", "source": "overview.pdf", "snippet": "SENTINEL Cyber Defense System Overview..."}]
+        elif any(word in query_lower for word in ["what", "who", "TRINETRA"]):
+            answer = "TRINETRA is a comprehensive cyber defense system combining three intelligence modules: Drishti (phishing detection), Kavach (anomaly detection), and Bridge (correlation analysis)."
+            sources = [{"page": "0", "source": "overview.pdf", "snippet": "TRINETRA Cyber Defense System Overview..."}]
         else:
-            answer = f"SENTINEL analyzing your query: '{req.query}'. System operates 24/7 with real-time threat monitoring and adaptive learning. Current status: All systems operational."
+            answer = f"TRINETRA analyzing your query: '{req.query}'. System operates 24/7 with real-time threat monitoring and adaptive learning. Current status: All systems operational."
             sources = []
 
         chat_history.add_message("assistant", answer)
@@ -147,7 +203,7 @@ def format_cross_reality_endpoint(req: CrossRealityRequest, api_key: bool = Depe
 
 @app.get("/")
 def home():
-    return {"message": "SENTINEL backend running 🚀", "timestamp": datetime.now().isoformat()}
+    return {"message": "TRINETRA backend running 🚀", "timestamp": datetime.now().isoformat()}
 
 
 @app.get("/api/health")
