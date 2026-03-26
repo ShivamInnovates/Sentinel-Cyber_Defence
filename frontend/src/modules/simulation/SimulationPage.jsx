@@ -54,7 +54,9 @@ export default function SimulationPage() {
     stopPolling();
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/sim-log');
+        const res = await fetch('http://127.0.0.1:8000/api/sim-log', {
+          headers: { 'X-API-KEY': 'sentinel-demo-key' }
+        });
         const data = await res.json();
         const steps = data.steps || [];
         const state = data.state || {};
@@ -81,11 +83,13 @@ export default function SimulationPage() {
     setSeenCount(0);
     startSimulation();
 
+    const API_HEADERS = { 'Content-Type': 'application/json', 'X-API-KEY': 'sentinel-demo-key' };
+
     // Reset backend data first
-    try { await fetch('http://127.0.0.1:8000/api/sim-reset', { method: 'POST' }); } catch { }
+    try { await fetch('http://127.0.0.1:8000/api/sim-reset', { method: 'POST', headers: API_HEADERS }); } catch { }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/simulate', { method: 'POST' });
+      const res = await fetch('http://127.0.0.1:8000/api/simulate', { method: 'POST', headers: API_HEADERS });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       startPolling();
     } catch (err) {
@@ -102,10 +106,6 @@ export default function SimulationPage() {
   }, [simLog]);
 
   useEffect(() => () => stopPolling(), [stopPolling]);
-
-  const progress = EXPECTED_STEPS.length > 0
-    ? Math.min(100, Math.round((simLog.length / EXPECTED_STEPS.length) * 100))
-    : 0;
 
   return (
     <ErrorBoundary>
@@ -144,25 +144,18 @@ export default function SimulationPage() {
         </div>
       )}
 
-      {/* Progress bar */}
+      {/* Progress Monitor */}
       {(simActive || simLog.length > 0) && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border-dim)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Live Progress
+              Live Terminal Output
             </span>
             <span style={{ fontSize: 11, fontWeight: 600, color: simActive ? 'var(--high)' : 'var(--success)' }}>
               {simActive
-                ? `${simLog.length} / ${EXPECTED_STEPS.length} steps — live from backend…`
-                : `${simLog.length} steps · Done ✓`}
+                ? `${simLog.length} events — capturing live stdout…`
+                : `${simLog.length} events · Execution Finished ✓`}
             </span>
-          </div>
-          <div style={{ height: 3, background: 'var(--bg-raised)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', width: `${progress}%`,
-              background: simActive ? 'var(--accent)' : 'var(--success)',
-              borderRadius: 2, transition: 'width 0.5s ease',
-            }} />
           </div>
         </div>
       )}

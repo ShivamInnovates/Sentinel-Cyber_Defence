@@ -48,5 +48,30 @@
     "id": 10,
     "text": "Delhi water tax mcd-water-payment.com pay before penalty WhatsApp message",
     "campaign_id": 2
+  },
+  {
+    "id": 300,
+    "text": "Got WhatsApp saying pay property tax at mcd-propertytax-delhi-pay.in urgent",
+    "campaign_id": 3
+  },
+  {
+    "id": 301,
+    "text": "SMS received property tax link mcd-propertytax-delhi-pay.in pay now",
+    "campaign_id": 4
+  },
+  {
+    "id": 302,
+    "text": "Friend shared mcd-propertytax-delhi-pay.in MCD property tax overdue",
+    "campaign_id": 5
+  },
+  {
+    "id": 303,
+    "text": "Telegram message property tax mcd-propertytax-delhi-pay.in deadline today",
+    "campaign_id": 6
+  },
+  {
+    "id": 304,
+    "text": "Received alert property tax mcd-propertytax-delhi-pay.in pay or face penalty",
+    "campaign_id": 7
   }
 ]

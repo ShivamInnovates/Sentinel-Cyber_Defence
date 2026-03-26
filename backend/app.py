@@ -11,9 +11,13 @@ from datetime import datetime
 from fastapi import FastAPI, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
+from pathlib import Path
 
-# Add current dir to path so `config` and `step4_models` resolve
+# Add current dir AND parent dir to path so all imports resolve
+# regardless of where app.py is launched from
 sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from config import FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE
 from Models.models import (
@@ -317,24 +321,89 @@ def classify_report_api(body: ReportBody):
     return {**result, "velocity": velocity}
 
 
-# ─────────────────────────────────────────────
-# SIMULATION ENDPOINTS
-# ─────────────────────────────────────────────
+import subprocess
+
+# Global state for live attack simulation
+_live_sim_log = []
+_live_sim_state = {"running": False, "done": False}
+
+def run_live_attack_simulation():
+    """Runs attack_demo.py natively and captures its output line by line."""
+    global _live_sim_log, _live_sim_state
+    _live_sim_log = []
+    _live_sim_state = {"running": True, "done": False}
+
+    # Clear previous data files
+    for f in [FAKE_SITES_FILE, KAVACH_ALERTS_FILE, CANARY_FILE, "data/stolen_credentials.json", "data/attacker_attempts.json"]:
+        if os.path.exists(f):
+            try: os.remove(f)
+            except: pass
+
+    # Check if we are on Windows to show the visible Chrome window
+    creationflags = 0
+    if os.name == 'nt':
+        creationflags = subprocess.CREATE_NEW_CONSOLE
+
+    # Start the actual attack demo script
+    process = subprocess.Popen(
+        [sys.executable, "attack_demo.py"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        cwd=os.path.dirname(os.path.abspath(__file__)),
+        creationflags=creationflags
+    )
+
+    for line in iter(process.stdout.readline, ''):
+        line = line.strip()
+        if not line:
+             continue
+        
+        # Parse output prefixes to assign colors/actors
+        actor = "SYSTEM"
+        severity = "INFO"
+        
+        if line.startswith("[+]"):
+            actor = "DRISHTI"  # Success/action
+            severity = "MEDIUM"
+        elif line.startswith("[-]"):
+            actor = "KAVACH"   # Error/block
+            severity = "HIGH"
+        elif "🚨" in line or "CONFIRMED" in line:
+            actor = "BRIDGE"
+            severity = "CRITICAL"
+        elif "STOLEN" in line:
+            actor = "CANARY"
+            severity = "HIGH"
+        elif "[*]" in line:
+            actor = "SYSTEM"
+            severity = "INFO"
+
+        _live_sim_log.append({
+            "actor": actor,
+            "msg": line,
+            "plain": line,
+            "severity": severity,
+            "ts": datetime.now().strftime("%H:%M:%S")
+        })
+
+    process.stdout.close()
+    process.wait()
+    _live_sim_state = {"running": False, "done": True}
 
 @app.post("/api/simulate", dependencies=[Depends(verify_api_key)])
 def start_simulation():
-    state = get_sim_state()
-    if state.get("running"):
+    if _live_sim_state.get("running"):
         return {"status": "already_running"}
-    t = threading.Thread(target=run_automated_demo, daemon=True)
+    t = threading.Thread(target=run_live_attack_simulation, daemon=True)
     t.start()
     return {"status": "started"}
 
-
 @app.get("/api/sim-log", dependencies=[Depends(verify_api_key)])
 def simulation_log():
-    """Frontend polls this every 800ms to get live step events."""
-    return {"steps": get_sim_log(), "state": get_sim_state()}
+    """Frontend polls this every 800ms to get live stdout lines."""
+    return {"steps": _live_sim_log, "state": _live_sim_state}
 
 
 @app.post("/api/sim-reset", dependencies=[Depends(verify_api_key)])
@@ -375,6 +444,49 @@ def _fmt_ts(iso_str: str) -> str:
         return iso_str
 
 
+class CredentialPayload(BaseModel):
+    username: str
+    password: str
+    url: Optional[str] = None
+
+@app.post("/api/capture_credentials")
+async def capture_credentials(payload: CredentialPayload):
+    """Phishing listener route to catch and store injected credentials"""
+    creds_file = Path("data/stolen_credentials.json")
+    
+    # Load existing
+    if creds_file.exists():
+        try:
+            with open(creds_file, "r") as f:
+                data = json.load(f)
+        except json.JSONDecodeError:
+            data = []
+    else:
+        data = []
+        
+    # Append new catch
+    data.append({
+        "timestamp": datetime.now().isoformat(),
+        "username": payload.username,
+        "password": payload.password,
+        "captured_from": payload.url or "Unknown"
+    })
+    
+    # Save back
+    with open(creds_file, "w") as f:
+        json.dump(data, f, indent=4)
+        
+    return {"status": "success", "message": "Credentials captured."}
+
+@app.get("/api/stolen_credentials")
+async def get_stolen_credentials():
+    """Retrieve all stolen credentials for display on the dashboard"""
+    creds_file = Path("data/stolen_credentials.json")
+    if creds_file.exists():
+        with open(creds_file, "r") as f:
+            return json.load(f)
+    return []
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
