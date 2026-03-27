@@ -6,7 +6,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 VECTORSTORE_PATH = "sentinel_vectorstore"
 
-def load_pdf(pdf_path="sentinel.pdf"):
+def load_pdf(pdf_path="TRINETRA.pdf"):
     """Load PDF with error handling."""
     if not os.path.exists(pdf_path):
         print(f"[pdf_loader] Warning: PDF file not found at {pdf_path}")
@@ -21,7 +21,7 @@ def load_pdf(pdf_path="sentinel.pdf"):
         print(f"[pdf_loader] Error loading PDF: {e}")
         return []
 
-def get_vectorstore(pdf_path="sentinel.pdf"):
+def get_vectorstore(pdf_path="TRINETRA.pdf"):
     """Get or create vectorstore with comprehensive error handling."""
     try:
         embeddings = HuggingFaceEmbeddings(

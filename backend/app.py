@@ -122,34 +122,13 @@ class CrossRealityRequest(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════════════
 
 # --- CHAT ENDPOINT ---
+from chatbot_service import run_chatbot
+
 @app.post("/api/chat")
 def chat(req: QueryRequest, api_key: bool = Depends(verify_api_key)):
-    """Chat endpoint with basic intelligence."""
     try:
-        chat_history.add_message("user", req.query)
+        return run_chatbot(req.query)
 
-        # Simple response based on query keywords
-        query_lower = req.query.lower()
-        if any(word in query_lower for word in ["threat", "attack", "phishing", "malware"]):
-            answer = "TRINETRA is actively monitoring for threats. Current threat level: MEDIUM with coordinated attacks detected on property_tax portals. Our AI models have identified cross-reality patterns suggesting coordinated campaigns."
-            sources = [{"page": "1", "source": "threat_analysis.pdf", "snippet": "Coordinated phishing campaigns targeting government portals..."}]
-        elif any(word in query_lower for word in ["zone", "network", "infrastructure"]):
-            answer = "TRINETRA protects 12 zones covering critical infrastructure. Each zone has intelligent anomaly detection monitoring login patterns, domain reputation, and behavioral baselines."
-            sources = [{"page": "3", "source": "architecture.pdf", "snippet": "Multi-zone defense architecture with distributed monitoring nodes..."}]
-        elif any(word in query_lower for word in ["what", "who", "TRINETRA"]):
-            answer = "TRINETRA is a comprehensive cyber defense system combining three intelligence modules: Drishti (phishing detection), Kavach (anomaly detection), and Bridge (correlation analysis)."
-            sources = [{"page": "0", "source": "overview.pdf", "snippet": "TRINETRA Cyber Defense System Overview..."}]
-        else:
-            answer = f"TRINETRA analyzing your query: '{req.query}'. System operates 24/7 with real-time threat monitoring and adaptive learning. Current status: All systems operational."
-            sources = []
-
-        chat_history.add_message("assistant", answer)
-
-        return {
-            "answer": answer,
-            "sources": sources,
-            "history": chat_history.get_history()
-        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
