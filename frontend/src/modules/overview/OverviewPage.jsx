@@ -147,7 +147,8 @@ export default function OverviewPage() {
     if (!streaming || !streamer) { clearTimeout(intervalRef.current); return; }
     const delay = () => 1000 + Math.random() * 2000;
     const tick = () => {
-      setSentinelLogs(prev => [streamer(), ...prev].slice(0, 1000));
+      const next = streamer();
+      if (next) setSentinelLogs(prev => [next, ...prev].slice(0, 1000));
       intervalRef.current = setTimeout(tick, delay());
     };
     intervalRef.current = setTimeout(tick, delay());
@@ -241,8 +242,8 @@ export default function OverviewPage() {
           </div>
           {unresolved.length === 0
             ? <div style={{ color: 'var(--success)', fontSize: 13, fontWeight: 600 }}>✓ All clear</div>
-            : unresolved.slice(0, 4).map(e => (
-              <div key={e.id} style={{ display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border-dim)', alignItems: 'flex-start' }}>
+            : unresolved.slice(0, 4).map((e, idx) => (
+              <div key={e.id ?? `event-${idx}`} style={{ display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border-dim)', alignItems: 'flex-start' }}>
                 <div style={{ width: 3, borderRadius: 2, alignSelf: 'stretch', flexShrink: 0, background: SEV_COLOR[e.severity] }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>{e.label}</div>
@@ -266,15 +267,15 @@ export default function OverviewPage() {
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Attack Correlations</span>
             <button onClick={() => setActiveModule('bridge')} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>View all →</button>
           </div>
-          {correlations.slice(0, 3).map(c => (
-            <div key={c.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-dim)' }}>
+          {(correlations ?? []).slice(0, 3).map((c, idx) => (
+            <div key={c.id ?? `corr-${idx}`} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-dim)' }}>
               <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
                 <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: c.confirmed ? 'var(--critical-bg)' : 'var(--high-bg)', color: c.confirmed ? 'var(--critical)' : 'var(--high)', border: `1px solid ${c.confirmed ? 'var(--critical-border)' : 'var(--high-border)'}`, fontWeight: 700 }}>
                   {c.confirmed ? '✓ Confirmed' : '⟳ Investigating'}
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>{c.confidence}%</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{c.story.slice(0, 90)}…</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{(c.story ?? '').slice(0, 90)}…</div>
             </div>
           ))}
         </div>

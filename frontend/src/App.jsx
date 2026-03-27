@@ -51,13 +51,15 @@ export default function App() {
 
   useEffect(() => {
     AOS.init({ duration: 400, easing: 'ease-out-cubic', once: true, offset: 12 });
-    
-    // Initial fetch
-    useStore.getState().fetchData();
-    // Poll every 2 seconds
-    const interval = setInterval(() => {
-      useStore.getState().fetchData();
-    }, 2000);
+
+    // Fetch once on mount, then retry every 30s until backend is up
+    const tryFetch = async () => {
+      await useStore.getState().fetchData();
+    };
+
+    tryFetch();
+    // Retry every 30s — much less noisy when backend is down
+    const interval = setInterval(tryFetch, 30000);
     return () => clearInterval(interval);
   }, []);
 

@@ -168,15 +168,21 @@ export async function fetchLogFile(url) {
  * pops the next log (cycling) to simulate real-time streaming.
  */
 export function createStreamer(logPool) {
+    if (!Array.isArray(logPool) || logPool.length === 0) {
+        // no source logs yet; safe no-op streamer
+        return function nextLog() { return null; };
+    }
+
     let idx = 0;
     return function nextLog() {
         const base = logPool[idx % logPool.length];
         idx++;
+        if (!base) return null;
         const now = new Date();
         const pad2 = n => String(n).padStart(2, '0');
         return {
             ...base,
-            id: `${base.id}-rt-${idx}`,
+            id: `${base.id ?? `unknown-${idx}`}-rt-${idx}`,
             ts: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} `
                 + `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}.${String(now.getMilliseconds()).padStart(3, '0')}`,
         };

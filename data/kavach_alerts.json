@@ -1,146 +1,19 @@
 [
   {
-    "id": 99,
+    "id": 1001,
     "portal_type": "property_tax",
     "zone": "East",
     "rule": "LOGIN_SPIKE",
     "severity": "RED",
-    "z_score": 44.3,
+    "z_score": null,
     "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
+      "45.138.22.91",
+      "91.2.3.4",
+      "12.34.56.78",
+      "185.220.101.34",
+      "103.21.244.0"
     ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T19:08:00.497509"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T19:14:23.234744"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T19:18:20.347211"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T19:18:53.939952"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T20:17:12.122459"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T20:20:56.365912"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T20:21:34.101605"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T20:22:47.644677"
-  },
-  {
-    "id": 99,
-    "portal_type": "property_tax",
-    "zone": "East",
-    "rule": "LOGIN_SPIKE",
-    "severity": "RED",
-    "z_score": 44.3,
-    "source_ips": [
-      "1.1.1.1",
-      "2.2.2.2",
-      "3.3.3.3",
-      "4.4.4.4"
-    ],
-    "message": "580 logins vs expected 3",
-    "detected_at": "2026-03-24T22:15:41.847381"
+    "message": "580 login attempts on 'property_tax' portal with no baseline. High volume indicates potential attack; initial default red threshold.",
+    "detected_at": "2026-03-27T13:55:46.283025"
   }
 ]
