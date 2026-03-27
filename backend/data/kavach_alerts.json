@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1001,
+    "portal_type": "property_tax",
+    "zone": "East",
+    "rule": "LOGIN_SPIKE",
+    "severity": "RED",
+    "z_score": null,
+    "source_ips": [
+      "45.138.22.91",
+      "91.2.3.4",
+      "12.34.56.78",
+      "185.220.101.34",
+      "103.21.244.0"
+    ],
+    "message": "580 login attempts on 'property_tax' portal with no baseline. High volume indicates potential attack; initial default red threshold.",
+    "detected_at": "2026-03-26T16:42:00.266923"
+  }
+]
