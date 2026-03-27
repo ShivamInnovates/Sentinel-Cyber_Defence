@@ -1,4 +1,5 @@
-import { useStore } from '../../store';
+import { useStore, API_BASE, API_KEY } from '../../store';
+import { useState, useCallback } from 'react';
 
 function fmt(iso) {
   if (!iso) return '—';
@@ -6,16 +7,62 @@ function fmt(iso) {
 }
 
 export default function CanaryCredentials() {
-  const { canaries } = useStore();
+  const { canaries, simActive, simLog } = useStore();
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadReport = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`${API_BASE}/sim-report`, {
+        headers: { 'X-API-KEY': API_KEY },
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `TRINETRA-SimReport-${new Date().toISOString().slice(0,10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`Could not download report: ${err.message}`);
+    } finally {
+      setDownloading(false);
+    }
+  }, []);
 
   // Backend canary shape: { username, portal_type, site_id, deployed_at, triggered, triggered_at }
   const stolen = canaries.filter(c => c.triggered);
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 6 }}>Canary Credentials</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Fake login details planted in phishing sites to catch credential theft in action.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 6 }}>Canary Credentials</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Fake login details planted in phishing sites to catch credential theft in action.</p>
+        </div>
+
+        {/* Download Report — visible if simulation was run */}
+        {!simActive && simLog.length > 0 && (
+          <button
+            onClick={downloadReport}
+            disabled={downloading}
+            style={{
+              padding: '8px 16px', borderRadius: 8,
+              background: downloading ? '#3ecf8e18' : 'transparent',
+              border: '1px solid #3ecf8e66',
+              color: '#3ecf8e',
+              fontSize: 12, fontWeight: 700,
+              cursor: downloading ? 'not-allowed' : 'pointer',
+              opacity: downloading ? 0.7 : 1,
+              transition: 'all 0.15s',
+            }}
+            onMouseOver={e => { if (!downloading) e.currentTarget.style.background = '#3ecf8e18'; }}
+            onMouseOut={e => { if (!downloading) e.currentTarget.style.background = 'transparent'; }}
+          >
+            {downloading ? '⏳ Generating…' : '📥 Download Report'}
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 28 }}>

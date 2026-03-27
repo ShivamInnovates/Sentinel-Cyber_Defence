@@ -50,6 +50,29 @@ export default function SimulationPage() {
     }
   }, []);
 
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadReport = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`${API_BASE}/sim-report`, {
+        headers: { 'X-API-KEY': API_KEY },
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `TRINETRA-SimReport-${new Date().toISOString().slice(0,10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`Could not download report: ${err.message}`);
+    } finally {
+      setDownloading(false);
+    }
+  }, []);
+
   const startPolling = useCallback(() => {
     stopPolling();
     pollRef.current = setInterval(async () => {
@@ -124,21 +147,44 @@ export default function SimulationPage() {
             Watch a real cyberattack unfold — every step driven by live Python model output from the backend.
           </p>
         </div>
-        <button
-          onClick={runSim}
-          disabled={simActive}
-          style={{
-            padding: '9px 20px', borderRadius: 8,
-            background: simActive ? 'var(--bg-raised)' : 'var(--accent)',
-            border: simActive ? '1px solid var(--border-dim)' : 'none',
-            color: simActive ? 'var(--text-muted)' : '#fff',
-            fontSize: 13, fontWeight: 700,
-            cursor: simActive ? 'not-allowed' : 'pointer',
-            opacity: simActive ? 0.6 : 1, transition: 'all 0.15s',
-          }}
-        >
-          {simActive ? '⚙ Running…' : simLog.length > 0 ? '↺ Replay' : '▶ Run Simulation'}
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {/* Download Report — only visible after simulation finishes */}
+          {simLog.length > 0 && !simActive && (
+            <button
+              onClick={downloadReport}
+              disabled={downloading}
+              style={{
+                padding: '9px 18px', borderRadius: 8,
+                background: downloading ? '#3ecf8e18' : 'transparent',
+                border: '1px solid #3ecf8e66',
+                color: '#3ecf8e',
+                fontSize: 13, fontWeight: 700,
+                cursor: downloading ? 'not-allowed' : 'pointer',
+                opacity: downloading ? 0.7 : 1,
+                transition: 'all 0.15s',
+              }}
+              onMouseOver={e => { if (!downloading) e.currentTarget.style.background = '#3ecf8e18'; }}
+              onMouseOut={e => { if (!downloading) e.currentTarget.style.background = 'transparent'; }}
+            >
+              {downloading ? '⏳ Generating PDF…' : '📥 Download Report'}
+            </button>
+          )}
+          <button
+            onClick={runSim}
+            disabled={simActive}
+            style={{
+              padding: '9px 20px', borderRadius: 8,
+              background: simActive ? 'var(--bg-raised)' : 'var(--accent)',
+              border: simActive ? '1px solid var(--border-dim)' : 'none',
+              color: simActive ? 'var(--text-muted)' : '#fff',
+              fontSize: 13, fontWeight: 700,
+              cursor: simActive ? 'not-allowed' : 'pointer',
+              opacity: simActive ? 0.6 : 1, transition: 'all 0.15s',
+            }}
+          >
+            {simActive ? '⚙ Running…' : simLog.length > 0 ? '↺ Replay' : '▶ Run Simulation'}
+          </button>
+        </div>
       </div>
 
       {/* Error banner */}

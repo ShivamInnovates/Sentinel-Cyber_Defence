@@ -27,3 +27,4 @@ certstream
 playwright
 selenium
 webdriver-manager
+reportlab
