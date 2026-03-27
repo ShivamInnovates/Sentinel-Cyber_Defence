@@ -22,3 +22,9 @@ rapidfuzz
 scipy
 certstream
 playwright
+langchain
+langchain-community
+langchain-huggingface
+faiss-cpu
+sentence-transformers
+langchain-ollama
