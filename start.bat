@@ -1,10 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: ========================================================================================
-:: SENTINEL Cyber Defense - Universal Entry Point (Windows)
-:: ========================================================================================
-
 :MENU
 cls
 echo ==================================================================================
@@ -22,15 +18,13 @@ echo.
 set /p choice="Choose launch method (0-2): "
 
 if "%choice%"=="0" exit /b
-if "%choice%"=="1" goto :NATIVE
-if "%choice%"=="2" goto :DOCKER
+if "%choice%"=="1" goto NATIVE
+if "%choice%"=="2" goto DOCKER
 echo Invalid choice. Please enter 0, 1, or 2.
 pause
-goto :MENU
+goto MENU
 
-:: ========================================================================================
-:: NATIVE MODE - Start backend and frontend in separate windows
-:: ========================================================================================
+
 :NATIVE
 cls
 echo ==================================================================================
@@ -38,33 +32,29 @@ echo   SENTINEL - Native Mode
 echo ==================================================================================
 echo.
 
-:: --- Check Python ---
 where py >nul 2>nul
 if errorlevel 1 (
     echo ERROR: Python Launcher "py" not found.
     echo Please install Python 3.11+ from https://www.python.org/downloads/
     pause
-    goto :MENU
+    goto MENU
 )
 
-:: --- Check Node.js ---
 where node >nul 2>nul
 if errorlevel 1 (
     echo ERROR: Node.js not found.
     echo Please install Node.js from https://nodejs.org/
     pause
-    goto :MENU
+    goto MENU
 )
 
-:: --- Check npm ---
 where npm >nul 2>nul
 if errorlevel 1 (
     echo ERROR: npm not found. Please reinstall Node.js.
     pause
-    goto :MENU
+    goto MENU
 )
 
-:: --- Install frontend dependencies if needed ---
 if not exist "frontend\node_modules" (
     echo Installing frontend dependencies...
     cd frontend
@@ -73,7 +63,7 @@ if not exist "frontend\node_modules" (
         echo ERROR: npm install failed. Check Node.js installation.
         cd ..
         pause
-        goto :MENU
+        goto MENU
     )
     cd ..
     echo Frontend dependencies installed.
@@ -83,7 +73,6 @@ echo.
 echo Starting backend server in a new window...
 start "SENTINEL Backend :8000" cmd /k "cd /d %~dp0backend && call start_server.bat"
 
-:: Small delay to let backend settle
 timeout /t 3 /nobreak >nul
 
 echo Starting frontend dev server in a new window...
@@ -102,16 +91,14 @@ echo   Tip: Close the opened terminal windows to stop the servers.
 echo ==================================================================================
 echo.
 pause
-goto :MENU
+goto MENU
 
-:: ========================================================================================
-:: DOCKER MODE - Delegate to docker-start.bat
-:: ========================================================================================
+
 :DOCKER
 if not exist "docker-start.bat" (
     echo ERROR: docker-start.bat not found.
     pause
-    goto :MENU
+    goto MENU
 )
 call docker-start.bat
-goto :MENU
+goto MENU

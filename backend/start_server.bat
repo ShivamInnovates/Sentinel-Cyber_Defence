@@ -1,10 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: ========================================================================================
-:: SENTINEL Backend Server - Operations Menu
-:: ========================================================================================
-
 cd /d "%~dp0"
 
 :MENU
@@ -24,19 +20,18 @@ echo   0) Exit
 echo.
 set /p choice="Choose an option: "
 
-if "%choice%"=="1" goto :START
-if "%choice%"=="2" goto :REINSTALL
-if "%choice%"=="3" goto :CLEAR_CACHE
-if "%choice%"=="4" goto :REBUILD_VENV
-if "%choice%"=="5" goto :STATUS
+if "%choice%"=="1" goto START
+if "%choice%"=="2" goto REINSTALL
+if "%choice%"=="3" goto CLEAR_CACHE
+if "%choice%"=="4" goto REBUILD_VENV
+if "%choice%"=="5" goto STATUS
 if "%choice%"=="0" exit /b
 echo Invalid choice.
 pause
-goto :MENU
+goto MENU
 
 
 :START
-:: ---- Activate or create venv ----
 if not exist "venv\Scripts\activate.bat" (
     echo Creating virtual environment using Windows Python Launcher...
     py -m venv venv
@@ -48,15 +43,13 @@ echo Virtual environment activated.
 echo Upgrading pip and build tools to avoid C++ compiler errors...
 python -m pip install --upgrade pip setuptools wheel
 
-:: ---- Check Python ----
 python --version
 if errorlevel 1 (
-    echo ERROR: Python not found. Please install Python or activate the virtual environment.
+    echo ERROR: Python not found in venv.
     pause
-    goto :MENU
+    goto MENU
 )
 
-:: ---- Install deps if missing ----
 echo.
 echo Checking dependencies...
 python -c "import fastapi; import uvicorn; import langchain; import greenlet; import langchain_community; import langchain_huggingface" 2>nul
@@ -82,7 +75,7 @@ python -m uvicorn chatbot_app:app --reload --host 0.0.0.0 --port 8000 --log-leve
 echo.
 echo Server stopped.
 pause
-goto :MENU
+goto MENU
 
 
 :REINSTALL
@@ -95,7 +88,7 @@ python -m pip install -r requirements.txt
 echo.
 echo Done.
 pause
-goto :MENU
+goto MENU
 
 
 :CLEAR_CACHE
@@ -109,14 +102,14 @@ if exist "sentinel_vectorstore" (
 )
 echo.
 pause
-goto :MENU
+goto MENU
 
 
 :REBUILD_VENV
 echo.
 echo WARNING: This will delete and recreate the virtual environment.
 set /p confirm="Are you sure? (y/n): "
-if /i not "%confirm%"=="y" goto :MENU
+if /i not "%confirm%"=="y" goto MENU
 
 echo Deleting venv...
 if exist "venv" rmdir /s /q venv
@@ -129,7 +122,7 @@ python -m pip install -r requirements.txt
 echo.
 echo Virtual environment rebuilt successfully.
 pause
-goto :MENU
+goto MENU
 
 
 :STATUS
@@ -140,4 +133,4 @@ echo Installed packages:
 python -m pip list
 echo.
 pause
-goto :MENU
+goto MENU

@@ -61,14 +61,10 @@ export default function SimulationPage() {
         const steps = data.steps || [];
         const state = data.state || {};
 
-        setSeenCount(prev => {
-          const newSteps = steps.slice(prev);
-          newSteps.forEach(step => addSimStep(step));
-          return steps.length;
-        });
-
+        // Only reveal logs once the simulation is fully complete
         if (state.done && !state.running) {
           stopPolling();
+          steps.forEach(step => addSimStep(step));
           endSimulation();
         }
       } catch {

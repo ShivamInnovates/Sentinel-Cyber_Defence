@@ -33,7 +33,7 @@ app.add_middleware(
 # API Key Authentication
 # ─────────────────────────────────────────
 API_KEY_NAME = "X-API-KEY"
-API_KEY = os.environ.get("SENTINEL_API_KEY", "sentinel-demo-key")
+API_KEY = os.environ.get("SENTINEL_API_KEY", "TRINETRA-demo-key")
 
 def verify_api_key(api_key: str = Header(None, alias=API_KEY_NAME)):
     if api_key != API_KEY:
@@ -273,61 +273,123 @@ def clear_history(api_key: bool = Depends(verify_api_key)):
     return {"message": "Chat history cleared."}
 
 # ─────────────────────────────────────────
+# Dashboard data endpoints
+# ─────────────────────────────────────────
+
+@app.get("/api/kpi")
+def get_kpi():
+    return {
+        "activeThreats": 6,
+        "criticalCount": 2,
+        "livePhishingSites": 2,
+        "loginAnomalies": 247,
+        "bridgeCorrelations": 2,
+        "domainsMonitored": 18447,
+        "computersCovered": 2400,
+        "avgDetectionMins": 3.8,
+        "zonesProtected": 12,
+        "takedownsSent": 2,
+    }
+
+@app.get("/api/domains")
+def get_domains():
+    return [
+        {"id": "D001", "domain": "mcd-services-delhi.com",  "similarity": 94, "type": "Aadhaar Form Clone",   "age": "2 min ago",  "severity": "CRITICAL", "status": "LIVE",     "ip": "185.220.101.47", "country": "RU"},
+        {"id": "D002", "domain": "mcdonline-payment.in",     "similarity": 87, "type": "Payment Portal Clone", "age": "14 min ago", "severity": "HIGH",     "status": "LIVE",     "ip": "103.42.58.22",   "country": "CN"},
+        {"id": "D003", "domain": "delhi-mcd-portal.net",     "similarity": 81, "type": "Login Page Clone",     "age": "1h ago",     "severity": "HIGH",     "status": "TAKEDOWN", "ip": "91.108.4.33",    "country": "NL"},
+        {"id": "D004", "domain": "mcd-tax-pay.org",          "similarity": 76, "type": "Tax Portal Clone",     "age": "3h ago",     "severity": "MEDIUM",   "status": "WATCH",    "ip": "172.66.40.2",    "country": "US"},
+        {"id": "D005", "domain": "mcdelhi-official.co.in",   "similarity": 68, "type": "General Portal Clone", "age": "6h ago",     "severity": "LOW",      "status": "WATCH",    "ip": "104.21.14.88",   "country": "US"},
+    ]
+
+@app.get("/api/events")
+def get_events():
+    return [
+        {"id": "KV001", "label": "Failed Login Spike",          "zone": "Central",    "severity": "CRITICAL", "timestamp": "08:12:00", "resolved": False, "count": 47},
+        {"id": "KV002", "label": "Foreign IP Connection",       "zone": "North-East", "severity": "HIGH",     "timestamp": "08:41:00", "resolved": False, "count": 1},
+        {"id": "KV003", "label": "Off-Hours Privileged Access", "zone": "East",       "severity": "HIGH",     "timestamp": "09:05:00", "resolved": False, "count": 3},
+        {"id": "KV004", "label": "Port Scan Detected",          "zone": "North",      "severity": "MEDIUM",   "timestamp": "09:12:00", "resolved": False, "count": 134},
+        {"id": "KV005", "label": "Large Data Transfer",         "zone": "South",      "severity": "MEDIUM",   "timestamp": "09:23:00", "resolved": False, "count": 1},
+        {"id": "KV006", "label": "Failed Login Spike",          "zone": "Shahdara",   "severity": "CRITICAL", "timestamp": "09:28:00", "resolved": False, "count": 31},
+    ]
+
+@app.get("/api/canaries")
+def get_canaries():
+    return [
+        {"id": "CN001", "credential": "suresh.kumar.2287",  "site": "mcd-services-delhi.com", "injectedAt": "08:44:12", "status": "STOLEN",     "usedAt": "08:51:33", "usedIP": "185.220.101.47"},
+        {"id": "CN002", "credential": "rajesh.sharma.4419", "site": "delhi-mcd-portal.net",   "injectedAt": "06:31:05", "status": "STOLEN",     "usedAt": "06:39:12", "usedIP": "91.108.4.33"},
+        {"id": "CN003", "credential": "priya.mehra.9901",   "site": "mcd-tax-pay.org",        "injectedAt": "15:12:30", "status": "MONITORING", "usedAt": None,       "usedIP": None},
+    ]
+
+@app.get("/api/correlations")
+def get_correlations():
+    return [
+        {"id": "BR001", "externalThreat": "mcd-services-delhi.com", "internalEvent": "Failed Login Spike — Central Zone",       "confidence": 97, "type": "Phishing → Credential Stuffing", "confirmed": True,  "story": "A fake MCD website stole login credentials. Those credentials were used to attack the real MCD system."},
+        {"id": "BR002", "externalThreat": "mcdonline-payment.in",    "internalEvent": "Off-Hours Privileged Access — East Zone", "confidence": 84, "type": "Phishing → Intrusion Attempt",   "confirmed": False, "story": "A fake payment site may have captured admin credentials used in an off-hours East Zone login."},
+        {"id": "BR003", "externalThreat": "delhi-mcd-portal.net",    "internalEvent": "Foreign IP Connection — North-East Zone", "confidence": 72, "type": "Credential Stuffing",            "confirmed": True,  "story": "A now-taken-down clone site collected credentials later used by a foreign IP to probe MCD."},
+    ]
+
+# ─────────────────────────────────────────
 # Simulation State + attack_demo.py runner
 # ─────────────────────────────────────────
 _sim_lock = threading.Lock()
 _sim_state = {"running": False, "done": False, "steps": []}
 
-_PHASE_ACTORS = {
-    "PHASE 2": "KAVACH",
-    "LOGIN PORTAL": "KAVACH",
-    "PHASE 3": "BRIDGE",
-    "CREDENTIAL STUFFING": "BRIDGE",
-    "PHISHING ATTACK CONFIRMED": "BRIDGE",
-}
+# ── Hardcoded DRISHTI steps (injected before attack_demo runs) ──────────────
+_DRISHTI_STEPS = [
+    {"actor": "DRISHTI", "severity": "INFO",     "plain": "CertStream feed active — new domain found similar to MCD using Levenshtein algorithm"},
+    {"actor": "DRISHTI", "severity": "HIGH",     "plain": "Domain similarity score calculated — domain flagged as suspicious"},
+    {"actor": "DRISHTI", "severity": "INFO",     "plain": "Headless browser visiting suspicious domain — screenshot taken"},
+    {"actor": "DRISHTI", "severity": "HIGH",     "plain": "Visual similarity score high — passing to Canary module"},
+    {"actor": "DRISHTI", "severity": "CRITICAL", "plain": "Login spike detected on real MCD portal — too many attempts in short time, creating suspicion"},
+]
 
-def _parse_line(line: str, phase: list) -> dict | None:
-    """Convert a raw stdout line from attack_demo.py into a step dict."""
-    line = line.strip()
-    if not line or line.startswith("="*10):
-        return None
-    # Advance phase based on phase headers
-    for marker, actor in _PHASE_ACTORS.items():
-        if marker in line:
-            phase[0] = actor
-            break
-    # Severity
-    severity = "INFO"
-    if "[+]" in line:
-        severity = "MEDIUM"
-    if "[-]" in line or "FAILED" in line.upper() or "ERROR" in line.upper():
-        severity = "HIGH"
-    if "\U0001f6a8" in line or ("CONFIRMED" in line.upper() and "PHISHING" in line.upper()):
-        severity = "CRITICAL"
-    plain = (
-        line.replace("[*]", "")
-            .replace("[+]", "\u2713")
-            .replace("[-]", "\u26a0")
-            .replace("\U0001f6a8", "ALERT:")
-            .strip()
-    )
-    return {
-        "actor": phase[0],
-        "msg": line,
-        "plain": plain,
-        "severity": severity,
-        "ts": datetime.utcnow().strftime("%H:%M:%S"),
-    }
+# ── BRIDGE steps injected after phishing confirmation ────────────────────────
+_BRIDGE_STEPS = [
+    {"actor": "BRIDGE", "severity": "INFO",     "plain": "Correlation check running — linking external phishing to internal login events"},
+    {"actor": "BRIDGE", "severity": "MEDIUM",   "plain": "Portal type match confirmed — fake site matches real MCD portal structure"},
+    {"actor": "BRIDGE", "severity": "HIGH",     "plain": "Time window match confirmed — credential stuffing occurred within 10-minute window"},
+    {"actor": "BRIDGE", "severity": "HIGH",     "plain": "Attack pattern confirmed — credential theft followed by replay on real site"},
+    {"actor": "BRIDGE", "severity": "CRITICAL", "plain": "⚡ COORDINATED ATTACK CONFIRMED — phishing → credential theft → stuffing pipeline complete"},
+]
+
+# ── Whitelist: only these stdout lines are shown; everything else is discarded ─
+# Each entry: (substring_to_match, actor, severity, clean_message)
+_WHITELIST = [
+    ("Navigating to",                      "CANARY", "INFO",     "System visiting fake site — credential harvesting in progress"),
+    ("Injected Fake Username",             "CANARY", "MEDIUM",   "Canary credential suresh.kumar.2287 injected into fake site login form"),
+    ("Injected Fake Password",             "CANARY", "MEDIUM",   "Canary password injected — form fully populated"),
+    ("Backend confirmed: Credentials",     "CANARY", "HIGH",     "Credential captured and stored in backend database"),
+    ("Automation sequence completed",      "CANARY", "INFO",     "Phase 1 automation complete — credential harvest done"),
+    ("Launching attacker browser",         "CANARY", "HIGH",     "Attacker browser launching — preparing to replay stolen credentials"),
+    ("Navigating to target site",          "CANARY", "HIGH",     "Attacker browser navigating to real MCD portal"),
+    ("Injected Stolen Username",           "CANARY", "CRITICAL", "Attacker replaying stolen credential suresh.kumar.2287 on real site"),
+    ("CREDENTIAL STUFFING ATTACK FIRED",   "CANARY", "CRITICAL", "Login attempt fired with stolen credentials on real MCD portal"),
+    ("Running phishing attack verif",      "KAVACH", "INFO",     "Real site login logs being monitored for anomalies"),
+    ("Victim Credential",                  "KAVACH", "WARN",     "Canary credential suresh.kumar.2287 found in real site login attempt logs"),
+    ("PHISHING ATTACK CONFIRMED",          "KAVACH", "CRITICAL", "Username matches canary credential — phishing attack CONFIRMED"),
+]
+
+def _make_step(actor: str, severity: str, plain: str) -> dict:
+    return {"actor": actor, "severity": severity, "msg": plain, "plain": plain,
+            "ts": datetime.utcnow().strftime("%H:%M:%S")}
 
 def _run_attack_demo():
-    """Background thread: runs attack_demo.py and streams stdout into _sim_state."""
+    """Background thread: runs attack_demo.py and streams curated steps into _sim_state."""
     backend_dir = os.path.dirname(os.path.abspath(__file__))
     script = os.path.join(backend_dir, "attack_demo.py")
-    phase = ["DRISHTI"]  # mutable list so closures can update it
+
     with _sim_lock:
         _sim_state["running"] = True
         _sim_state["done"] = False
         _sim_state["steps"] = []
+
+    # 1. Inject hardcoded DRISHTI steps immediately
+    for s in _DRISHTI_STEPS:
+        with _sim_lock:
+            _sim_state["steps"].append(_make_step(**s))
+
+    bridge_injected = False
+
     try:
         proc = subprocess.Popen(
             [sys.executable, script],
@@ -338,20 +400,23 @@ def _run_attack_demo():
             cwd=backend_dir,
         )
         for raw in proc.stdout:
-            step = _parse_line(raw, phase)
-            if step:
-                with _sim_lock:
-                    _sim_state["steps"].append(step)
+            raw_stripped = raw.strip()
+            # 2. Whitelist filter — discard everything not in the list
+            for substring, actor, severity, clean_msg in _WHITELIST:
+                if substring in raw_stripped:
+                    with _sim_lock:
+                        _sim_state["steps"].append(_make_step(actor, severity, clean_msg))
+                    # 3. After KAVACH confirms phishing, auto-inject BRIDGE steps
+                    if "PHISHING ATTACK CONFIRMED" in raw_stripped and not bridge_injected:
+                        bridge_injected = True
+                        for bs in _BRIDGE_STEPS:
+                            with _sim_lock:
+                                _sim_state["steps"].append(_make_step(**bs))
+                    break  # Only match first whitelist rule per line
         proc.wait()
     except Exception as exc:
         with _sim_lock:
-            _sim_state["steps"].append({
-                "actor": "SYSTEM",
-                "msg": f"Simulation error: {exc}",
-                "plain": str(exc),
-                "severity": "CRITICAL",
-                "ts": datetime.utcnow().strftime("%H:%M:%S"),
-            })
+            _sim_state["steps"].append(_make_step("SYSTEM", "CRITICAL", f"Simulation error: {exc}"))
     finally:
         with _sim_lock:
             _sim_state["running"] = False

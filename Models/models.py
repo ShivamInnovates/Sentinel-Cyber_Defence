@@ -490,6 +490,7 @@ def _check_login_spike(portal: str, count: int, ts: datetime, source_ips: list):
                 "z_score": None,
                 "login_count": count,
                 "expected": 0,
+                
                 "message": (
                     f"{count} login attempts on '{portal}' portal with no baseline. "
                     "Elevated volume; monitor closely."

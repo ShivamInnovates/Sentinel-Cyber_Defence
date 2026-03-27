@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Forward all /api/* requests to the FastAPI backend on port 8000
+      // All /api/* requests proxied to FastAPI on port 8000
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,

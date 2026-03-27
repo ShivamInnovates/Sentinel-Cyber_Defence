@@ -25,3 +25,5 @@ rapidfuzz
 scipy
 certstream
 playwright
+selenium
+webdriver-manager
