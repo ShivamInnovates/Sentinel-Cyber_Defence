@@ -147,7 +147,8 @@ export default function OverviewPage() {
     if (!streaming || !streamer) { clearTimeout(intervalRef.current); return; }
     const delay = () => 1000 + Math.random() * 2000;
     const tick = () => {
-      setSentinelLogs(prev => [streamer(), ...prev].slice(0, 1000));
+      const next = streamer();
+      if (next) setSentinelLogs(prev => [next, ...prev].slice(0, 1000));
       intervalRef.current = setTimeout(tick, delay());
     };
     intervalRef.current = setTimeout(tick, delay());

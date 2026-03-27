@@ -1,4 +1,8 @@
 import os
+import sys
+import threading
+import subprocess
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, UploadFile, File, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,7 +11,7 @@ from chat_history import ChatHistory
 from alert_formatter import format_alert, format_cross_reality
 
 from langchain.chains import ConversationalRetrievalChain
-from langchain.llms import HuggingFacePipeline
+from langchain_huggingface import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -267,6 +271,136 @@ def clear_history(api_key: bool = Depends(verify_api_key)):
     chat_history.clear()
     memory.clear()
     return {"message": "Chat history cleared."}
+
+# ─────────────────────────────────────────
+# Simulation State + attack_demo.py runner
+# ─────────────────────────────────────────
+_sim_lock = threading.Lock()
+_sim_state = {"running": False, "done": False, "steps": []}
+
+_PHASE_ACTORS = {
+    "PHASE 2": "KAVACH",
+    "LOGIN PORTAL": "KAVACH",
+    "PHASE 3": "BRIDGE",
+    "CREDENTIAL STUFFING": "BRIDGE",
+    "PHISHING ATTACK CONFIRMED": "BRIDGE",
+}
+
+def _parse_line(line: str, phase: list) -> dict | None:
+    """Convert a raw stdout line from attack_demo.py into a step dict."""
+    line = line.strip()
+    if not line or line.startswith("="*10):
+        return None
+    # Advance phase based on phase headers
+    for marker, actor in _PHASE_ACTORS.items():
+        if marker in line:
+            phase[0] = actor
+            break
+    # Severity
+    severity = "INFO"
+    if "[+]" in line:
+        severity = "MEDIUM"
+    if "[-]" in line or "FAILED" in line.upper() or "ERROR" in line.upper():
+        severity = "HIGH"
+    if "\U0001f6a8" in line or ("CONFIRMED" in line.upper() and "PHISHING" in line.upper()):
+        severity = "CRITICAL"
+    plain = (
+        line.replace("[*]", "")
+            .replace("[+]", "\u2713")
+            .replace("[-]", "\u26a0")
+            .replace("\U0001f6a8", "ALERT:")
+            .strip()
+    )
+    return {
+        "actor": phase[0],
+        "msg": line,
+        "plain": plain,
+        "severity": severity,
+        "ts": datetime.utcnow().strftime("%H:%M:%S"),
+    }
+
+def _run_attack_demo():
+    """Background thread: runs attack_demo.py and streams stdout into _sim_state."""
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    script = os.path.join(backend_dir, "attack_demo.py")
+    phase = ["DRISHTI"]  # mutable list so closures can update it
+    with _sim_lock:
+        _sim_state["running"] = True
+        _sim_state["done"] = False
+        _sim_state["steps"] = []
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, script],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            cwd=backend_dir,
+        )
+        for raw in proc.stdout:
+            step = _parse_line(raw, phase)
+            if step:
+                with _sim_lock:
+                    _sim_state["steps"].append(step)
+        proc.wait()
+    except Exception as exc:
+        with _sim_lock:
+            _sim_state["steps"].append({
+                "actor": "SYSTEM",
+                "msg": f"Simulation error: {exc}",
+                "plain": str(exc),
+                "severity": "CRITICAL",
+                "ts": datetime.utcnow().strftime("%H:%M:%S"),
+            })
+    finally:
+        with _sim_lock:
+            _sim_state["running"] = False
+            _sim_state["done"] = True
+
+
+# ─────────────────────────────────────────
+# /api/sim-reset — clear previous run
+# ─────────────────────────────────────────
+@app.post("/api/sim-reset")
+def sim_reset(api_key: bool = Depends(verify_api_key)):
+    """Reset simulation state so a fresh run can start."""
+    with _sim_lock:
+        if _sim_state["running"]:
+            raise HTTPException(status_code=409, detail="Simulation is still running")
+        _sim_state["done"] = False
+        _sim_state["steps"] = []
+    return {"ok": True}
+
+
+# ─────────────────────────────────────────
+# /api/simulate — launch attack_demo.py
+# ─────────────────────────────────────────
+@app.post("/api/simulate")
+def start_simulation(api_key: bool = Depends(verify_api_key)):
+    """Kick off attack_demo.py in a background thread."""
+    with _sim_lock:
+        if _sim_state["running"]:
+            raise HTTPException(status_code=409, detail="Simulation already running")
+    t = threading.Thread(target=_run_attack_demo, daemon=True)
+    t.start()
+    return {"ok": True, "message": "Simulation started — poll /api/sim-log for output"}
+
+
+# ─────────────────────────────────────────
+# /api/sim-log — return streamed output
+# ─────────────────────────────────────────
+@app.get("/api/sim-log")
+def get_sim_log(api_key: bool = Depends(verify_api_key)):
+    """Return all stdout steps captured so far + running/done state."""
+    with _sim_lock:
+        return {
+            "steps": list(_sim_state["steps"]),
+            "state": {
+                "running": _sim_state["running"],
+                "done": _sim_state["done"],
+            },
+        }
+
 
 # ─────────────────────────────────────────
 # /api/health — sanity check

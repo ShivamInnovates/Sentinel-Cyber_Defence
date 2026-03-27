@@ -153,6 +153,11 @@ export function normaliseLog(rec) {
 export async function fetchLogFile(url) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
+    const ct = res.headers.get('content-type') ?? '';
+    if (!ct.includes('application/json') && !ct.includes('text/plain') && !ct.includes('application/x-ndjson')) {
+        // Vite served an HTML 404 page — treat as empty
+        throw new Error(`${url} returned non-JSON content-type: ${ct}`);
+    }
     const text = await res.text();
     return text
         .split('\n')
@@ -168,6 +173,10 @@ export async function fetchLogFile(url) {
  * pops the next log (cycling) to simulate real-time streaming.
  */
 export function createStreamer(logPool) {
+    if (!logPool || logPool.length === 0) {
+        // Return a no-op streamer if pool is empty
+        return function nextLog() { return null; };
+    }
     let idx = 0;
     return function nextLog() {
         const base = logPool[idx % logPool.length];

@@ -32,22 +32,34 @@ export const useStore = create((set, get) => ({
   simStep: 0,
 
   fetchData: async () => {
-    try {
-      const headers = { 'X-API-KEY': API_KEY };
-      const [kpis, domains, events, canaries, correlations] = await Promise.all([
-        fetch(`${API_BASE}/kpi`, { headers }).then(res => res.json()),
-        fetch(`${API_BASE}/domains`, { headers }).then(res => res.json()),
-        fetch(`${API_BASE}/events`, { headers }).then(res => res.json()),
-        fetch(`${API_BASE}/canaries`, { headers }).then(res => res.json()),
-        fetch(`${API_BASE}/correlations`, { headers }).then(res => res.json()),
-      ]);
-      set((s) => ({
-        kpis: { ...s.kpis, ...kpis },
-        domains, events, canaries, correlations
-      }));
-    } catch (err) {
-      console.warn('Backend fetch failed', err);
-    }
+    const headers = { 'X-API-KEY': API_KEY };
+
+    // Helper: fetch JSON, fall back to null if unavailable (HTML 404 etc.)
+    const safeJson = async (url) => {
+      try {
+        const res = await fetch(url, { headers });
+        if (!res.ok) return null;
+        const ct = res.headers.get('content-type') ?? '';
+        if (!ct.includes('application/json')) return null;
+        return await res.json();
+      } catch { return null; }
+    };
+
+    const [kpis, domains, events, canaries, correlations] = await Promise.all([
+      safeJson(`${API_BASE}/kpi`),
+      safeJson(`${API_BASE}/domains`),
+      safeJson(`${API_BASE}/events`),
+      safeJson(`${API_BASE}/canaries`),
+      safeJson(`${API_BASE}/correlations`),
+    ]);
+
+    set((s) => ({
+      kpis:         kpis         ? { ...s.kpis, ...kpis }    : s.kpis,
+      domains:      domains      ?? getMockDomains(),
+      events:       events       ?? getMockEvents(),
+      canaries:     canaries     ?? getMockCanaries(),
+      correlations: correlations ?? getMockCorrelations(),
+    }));
   },
 
   setActiveModule: (module) => set({ activeModule: module }),
