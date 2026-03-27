@@ -5,91 +5,183 @@ from langchain_classic.prompts import PromptTemplate
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_ollama import OllamaLLM
 
-# Load components
+# 🔥 Load vectorstore (ensure good chunking in pdf_loader)
 vectorstore = get_vectorstore()
-retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
 
-llm = OllamaLLM(model="llama3.2", base_url="http://localhost:11434")
+retriever = vectorstore.as_retriever(
+    search_kwargs={
+        "k": 4,  # fewer but more relevant chunks
+    }
+)
 
+# 🔥 LLM
+llm = OllamaLLM(
+    model="llama3.2",
+    base_url="http://localhost:11434",
+    temperature=0.2  # 🔥 reduce hallucination
+)
+
+# 🔥 Memory
 memory = ConversationBufferMemory(
     memory_key="chat_history",
     return_messages=True,
     output_key="answer"
 )
 
+# 🔥 STRONG PROMPT (VERY IMPORTANT)
 RAG_PROMPT = PromptTemplate(
     input_variables=["context", "question", "chat_history"],
-    template="""Answer only from context..."""
-)
+    template="""
+    You are TRINETRA AI — a strict cybersecurity assistant.
 
+    RULES:
+    1. Answer ONLY using the provided context.
+    2. Do NOT add outside knowledge.
+    3. If answer is not present → say: "I don't have enough information in the document."
+    4. Be precise and structured.
+    5. Prefer bullet points when possible.
+
+    ---------------------
+    CONTEXT:
+    {context}
+    ---------------------
+
+    CHAT HISTORY:
+    {chat_history}
+
+    QUESTION:
+    {question}
+
+    FINAL ANSWER:
+    """
+    )
+
+# 🔥 QA Chain
 qa_chain = ConversationalRetrievalChain.from_llm(
     llm=llm,
     retriever=retriever,
     memory=memory,
-    return_source_documents=True
+    return_source_documents=True,
+    combine_docs_chain_kwargs={"prompt": RAG_PROMPT},
+    verbose=False
 )
 
 chat_history = ChatHistory()
 
+from duckduckgo_search import DDGS
 
-# 🔥 MAIN FUNCTION (IMPORTANT)
-def run_chatbot(query: str):
-    query_lower = query.lower()
-
-    # 🔥 SMART FALLBACKS (before RAG)
-    if "trinetra" in query_lower:
-        return {
-            "answer": (
-                "TRINETRA is a comprehensive cyber defense system combining three intelligence modules:\n"
-                "- Drishti: phishing detection using certificate monitoring and visual similarity\n"
-                "- Kavach: anomaly detection for login patterns and network behavior\n"
-                "- Bridge: correlation engine linking external threats with internal events"
-            ),
-            "sources": [],
-            "history": []
-        }
-
-    if any(word in query_lower for word in ["hi", "hello", "hey"]):
-        return {
-            "answer": "Hello! I'm TRINETRA's AI assistant. Ask me about threats, phishing, or system monitoring.",
-            "sources": [],
-            "history": []
-        }
-
-    # 🧠 RAG execution
+def web_search(query):
     try:
-        result = qa_chain({"question": query})
+        results = DDGS().text(query, max_results=3)
 
-        answer = result.get("answer", "")
+        snippets = []
+        for r in results:
+            snippets.append(r["body"])
 
-        # ⚠️ If RAG fails → fallback
-        if not answer or "don't know" in answer.lower():
-            answer = (
-                "I couldn't find this in the knowledge base, but here's what I know:\n"
-                "TRINETRA is a cyber defense system focused on threat detection, phishing analysis, "
-                "and anomaly monitoring across critical infrastructure."
-            )
-
-        sources = [
-            {
-                "page": doc.metadata.get("page", "unknown"),
-                "source": doc.metadata.get("source", "unknown"),
-                "snippet": doc.page_content[:200]
-            }
-            for doc in result.get("source_documents", [])
-        ]
-
-        return {
-            "answer": answer,
-            "sources": sources,
-            "history": []
-        }
+        return "\n".join(snippets)
 
     except Exception as e:
-        print("Chatbot error:", e)
+        print("Web search error:", e)
+        return None
 
+
+# 🚀 MAIN FUNCTION
+def run_chatbot(query: str):
+    query_lower = query.lower().strip()
+
+    # 🔥 1. Greeting
+    if any(word in query_lower for word in ["hi", "hello", "hey"]):
         return {
-            "answer": "TRINETRA encountered an issue. Please try again.",
+            "answer": "Hey 👋 I'm TRINETRA AI. Ask me anything about cybersecurity or threats.",
             "sources": [],
             "history": []
         }
+
+    # 🔥 2. Try RAG first
+    try:
+        result = qa_chain.invoke({
+            "question": query
+        })
+
+        answer = result.get("answer", "").strip()
+
+        if answer and "I don't have enough information" not in answer:
+            return {
+                "answer": answer,
+                "sources": [
+                    {
+                        "page": doc.metadata.get("page", "unknown"),
+                        "snippet": doc.page_content[:150]
+                    }
+                    for doc in result.get("source_documents", [])
+                ],
+                "history": []
+            }
+
+    except Exception as e:
+        print("RAG error:", e)
+        
+    if "summarize" in query_lower:
+        try:
+            docs = vectorstore.similarity_search("", k=10)  # fetch broad content
+
+            full_text = "\n".join([doc.page_content for doc in docs])
+
+            prompt = f"""
+                 Summarize the following document in 5-6 bullet points:
+
+                {full_text}
+                """
+
+            summary = llm.invoke(prompt)
+
+            return {
+                "answer": summary,
+                "sources": ["pdf-summary"],
+                "history": []
+            }
+
+        except Exception as e:
+            print("Summary error:", e)
+
+    # 🌐 3. WEB FALLBACK (IMPROVED 🔥)
+    web_data = web_search(query)
+
+    if web_data:
+        try:
+            prompt = f"""
+                You are a cybersecurity expert.
+
+                Explain the following question in a clear, detailed, and structured way.
+
+                Include:
+                - Definition
+                - Key components
+                - Real-world examples
+
+                Context:
+                {web_data}
+
+                Question:
+                {query}
+
+                Answer:
+                """
+
+            response = llm.invoke(prompt)
+
+            return {
+                        "answer": response,
+                        "sources": ["web"],
+                        "history": []
+                    }
+
+        except Exception as e:
+           print("Web LLM error:", e)
+
+    # ❌ 4. Final fallback
+    return {
+        "answer": "I couldn't find relevant information. Try rephrasing your question.",
+        "sources": [],
+        "history": []
+    }

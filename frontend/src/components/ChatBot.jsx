@@ -103,6 +103,49 @@ export function ChatBot() {
     }
   };
 
+    const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_BASE}/upload-pdf`, {
+        method: "POST",
+        headers: {
+          "X-API-KEY": API_KEY,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `📄 PDF uploaded successfully: ${file.name}\nNow I will answer based on this document.`
+        }
+      ]);
+
+    } catch (error) {
+      console.error("Upload error:", error);
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "❌ Failed to upload PDF. Please try again."
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="chatbot-widget">
       <button
@@ -118,7 +161,7 @@ export function ChatBot() {
       {isOpen && (
         <div className="chatbot-window">
           <div className="chatbot-header">
-            <h3>SENTINEL Chatbot</h3>
+            <h3>TRINETRA Chatbot</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
               {messages.length > 0 && (
                 <button className="icon-btn" onClick={clearHistory} title="Clear history">
@@ -126,6 +169,21 @@ export function ChatBot() {
                 </button>
               )}
               <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
+              <input
+                  type="file"
+                  accept="application/pdf"
+                  id="pdf-upload"
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
+
+                <button
+                  className="icon-btn"
+                  onClick={() => document.getElementById('pdf-upload').click()}
+                  title="Upload PDF"
+                >
+                  ➕
+              </button>
             </div>
           </div>
 
